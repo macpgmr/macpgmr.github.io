@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<!--Copyright 2016 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Lazarus Cross-Platform Project</TITLE>
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+
+<BODY>
+
+<CENTER>
+<H1>Lazarus Cross-Platform Project</H1>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Included">What's Included</A><BR>
+<A HREF="#HowItWorks">How It Works</A><BR>
+<A HREF="#Acknowledgements">Acknowledgements</A><BR><P>
+
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+The Lazarus Cross-Platform Project (LazXProj) adds 
+to Lazarus the ability to create cross-platform projects 
+with support for the following on Windows, Mac and Linux:<P>
+
+<UL>
+  <LI>App version information
+  <LI>App preferences and settings
+  <LI>App icons (.ico, .icns, .png)
+  <LI>On Mac, proper menus and app bundle
+  <LI>Install scripts for app (optional)
+  <LI>When version info is edited in IDE, the Info.plist file, install scripts, etc. 
+      will be updated automatically after next compile.
+</UL>
+
+
+<HR>
+<A name="Included"></A><H2>What's Included</H2>
+
+A zip file with the source is available <A HREF="lazxproj_src.zip">here</A>.<P>
+
+<H3>AppXProj package</H3>
+
+Cross-platform projects use the <B>AppXProj</B> package's 
+units, so make sure it's been compiled. You don't install the AppXProj package
+in Lazarus, just compile it.<P>
+
+Note that you can use the AppXProj package or its units in any app, even non-LCL 
+apps. The AppXProj units have no dependence on any Lazarus package or unit.<P>
+
+<H3>fix_xproj console app</H3>
+
+Open <B>fix_xproj.lpi</B> in Lazarus and compile it. This app is run after 
+each compile of a cross-platform project to check if any version info needs 
+to be updated.<P>
+
+You can also run this app yourself from the command line.<P>
+
+<H3>LazXProj package</H3>
+
+Once the <B>LazXProj</B> package has been compiled and installed in Lazarus, 
+you can choose File | New and create a cross-platform project.<P>
+
+Note that cross-platform projects don't have a dependency on the LazXProj
+package. This makes it easy to move the project to another computer where
+LazXProj has not been installed in Lazarus. Just compile AppXProj and fix_xproj
+and your cross-platform project is ready to compile.<P> 
+
+
+<HR>
+<A name="HowItWorks"></A><H2>How It Works</H2>
+
+When you create a cross-platform project with File | New, LazXProj creates
+your new project's folder and copies files from its <B>templates</B>,
+<B>icons</B> and <B>scripts</B> subfolders into your project's folder.
+These "boilerplate" files automatically add cross-platform support
+to your app.<P>
+
+Once copied to your project folder, you can make any changes you want to
+your project's files. For example, you'll probably want to replace the 
+project's icons with your own. To do that, just replace the project's default
+.ico, .icns and .png files.<P>
+
+LazXProj adds a call to fix_xproj on the Compiler Commands tab of your 
+project's Project Options. After each compile, Lazarus will run this small
+console app, which checks to see if any of the version info files need to
+be updated. If you've edited the project's version info on the Version Info
+tab, fix_xproj will update the project's version info files and install scripts.<P>
+
+On a Mac, fix_xproj makes sure the project's app bundle is properly updated
+and named correctly. Since the app name may not be the same
+as the target executable, it uses the target name to create a symlink to the 
+actual app bundle if they differ. This is required so Lazarus can debug the app.<P>
+
+If you let LazXProj create the optional installer scripts for your project, 
+fix_xproj also updates these if needed:<P>
+
+<UL>
+  <LI>projectname.iss - on Windows, compile this script with 
+      <A HREF="http://www.jrsoftware.org/isinfo.php">Inno Setup</A>
+      to create an .exe installer for the app.
+  <LI>makedmg.sh - on Mac, run this script to create a .dmg installer for 
+      the app.
+  <LI>makedeb.sh - on Ubuntu, run this script to create a .deb installer
+      for the app.
+</UL>
+
+<B><I>Note:</I></B> In Lazarus, a project's Version Info tab is a place to enter 
+Windows version information that will be included in a resource embedded in the 
+compiled Windows .exe. However, a number of the items entered there can also be
+used with Mac and Linux apps. For more information, see these links:<P>
+
+Windows: <A HREF="https://msdn.microsoft.com/en-us/library/windows/desktop/aa381058(v=vs.85).aspx">VERSIONINFO resource</A><P>
+
+Mac: <A HREF="https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Introduction/Introduction.html#//apple_ref/doc/uid/TP40009248-SW1">About Info.plist Keys and Values</A><P>
+
+
+<HR>
+<A name="Acknowledgements"></A><H2>Acknowledgements</H2>
+
+LazXProj automates the addition of many of the tips described in this
+ancient article:
+<A HREF="https://dl.dropboxusercontent.com/u/28343282/MacXPlatform/MacXPlatform_Part8.html">
+Making Your Lazarus App Mac-Friendly</A>.<P>
+
+LazXProj's default icons are based on a detail from the
+<A HREF="https://openclipart.org/detail/2152/green-chameleon">Green chameleon</A>
+clip art. Although at first glance it may look like a chameleon riding a bicycle, 
+it's actually a branch.<P>
+
+
+<HR>
+Copyright 2016 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First revision July 31, 2016; last edited Aug. 12, 2016.<P>
+
+</BODY>
+
+</HTML>

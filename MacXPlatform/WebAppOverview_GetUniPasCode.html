@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!--Copyright 2016 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<BODY>
+<pre><code class="delphi">unit GetUniAppThread;
+
+{
+  Returns JSON or JSON-P in response to "blocks" or "block=xxx".
+
+  Assumes Unicode.sqlitedb database exists and is in correct format
+   (as created by cvtuni.pas).
+
+   Author:     Phil Hess.
+   Copyright:  Copyright (C) 2012 Phil Hess. All rights reserved.
+   License:    Modified LGPL.
+}
+
+interface
+
+uses
+  SysUtils, Classes, FCGIApp, fpjson, UnicodeDb;
+
+type
+  TAppThread = class(TWebSession)
+  private
+    UniDb : TUnicodeDb;
+  published
+    procedure Home; override;
+  end;
+
+
+implementation
+
+procedure TAppThread.Home;
+var
+  StrList   : TStringList;
+  Item      : Integer;
+  StartCode : LongWord;
+  EndCode   : LongWord;
+begin
+
+  if not Assigned(UniDb) then
+    begin
+    UniDb := TUnicodeDb.Create;
+    if not UniDb.Open('Unicode.sqlitedb') then
+      begin
+      UniDb.Free;
+      UniDb := nil;
+      Exit;
+      end;
+    end;
+
+  if Queries[0] = 'blocks' then
+    begin
+    StrList := TStringList.Create;
+    UniDb.GetBlockNames(StrList);
+    Response := '';
+    for Item := 0 to StrList.Count-1 do
+      begin
+      UniDb.GetBlockRange(StrList[Item], StartCode, EndCode);
+      Response := Response + 
+       '{"StartCode":"' +  IntToStr(StartCode) + 
+       '","EndCode":"' + IntToStr(EndCode) +
+       '","Name":"' + StringToJSONString(StrList[Item]) + '"},'
+      end;
+    StrList.Free;
+    end
+
+  else if Query['block'] <> '' then
+    begin
+    StrList := TStringList.Create;
+    UniDb.GetBlockChars(Query['block'], StrList);
+    Response := '';
+    for Item := 0 to StrList.Count-1 do
+      begin
+      Response := Response +
+       '{"Code":"' + StrList.Names[Item] + '","Name":"' + 
+       StringToJSONString(StrList.ValueFromIndex[Item]) + '"},'
+      end;
+    StrList.Free;
+    end;
+
+  Response := '[' + Copy(Response, 1, Length(Response)-1) + ']';  //Array
+
+  if Query['callback'] <> '' then  {JSON-P callback function name passed?}
+    Response := Query['callback'] + '(' + Response + ');';
+
+end;  {Home}
+
+
+end.
+</code></pre>
+
+</BODY>
+
+</HTML>
