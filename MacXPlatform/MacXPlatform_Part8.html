@@ -1,0 +1,605 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<!--Copyright 2010 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Mac Cross-Platform Challenges - Part 8: Making Your Lazarus App Mac-Friendly</TITLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Mac Cross-Platform Challenges</H1>
+<H2>Part 8: Making Your Lazarus App Mac-Friendly</H2>
+</CENTER>
+
+<HR>
+
+Lazarus is a versatile and extensible tool, but its Delphi-influenced 
+heritage does not match up well with the needs of Mac applications, particularly
+in the user interface department. And since you won't be using Apple's Xcode 
+IDE at all when developing a Lazarus app on Mac, you'll need to do a number of 
+things manually and outside of the Lazarus IDE.<p>
+
+If you simply recompile a Lazarus or converted Delphi app with Lazarus on Mac, 
+you'll end up with a vaguely Win95 look and feel that would likely fall short of
+the user interface guidelines of Apple's new Mac App Store. However, with a few 
+conditionally compiled code additions, you can get your app to act 
+a lot more like a standard Mac app.<p>
+
+Here are some problem areas that this article attempts to address:<p>
+
+<UL>
+  <LI><A HREF="#AppMenu">Application menu</A>
+  <LI><A HREF="#Buttons">Button size and position</A>
+  <LI><A HREF="#Dialogs">Dialog boxes and modal sheets</A>
+  <LI><A HREF="#VersionInfo">Info.plist file and version info</A>
+  <LI><A HREF="#Preferences">Preferences</A>
+  <LI><A HREF="#DropFiles">Double-clicking and dropping your app's files</A>
+  <LI><A HREF="#Help">Help</A>
+</UL>
+
+Note that this article assumes that you're compiling with the Carbon widgetset
+using Lazarus 0.9.29 or later. However, much of this article will also apply
+to any future Cocoa-based widgetset. Some parts should even be applicable
+to non-LCL Pascal Cocoa development.<p>
+
+Also, I've created several small convenience units and added them to the 
+<b>XDev Toolkit</b> (a miscellaneous collection of stuff I've developed over 
+the years). The <b>CFHelpers</b> unit has routines that make it easier to work 
+with OS X Core Foundation (CF) strings in Pascal. The <b>PropListUtil</b> 
+unit makes working with property list files easier and the <b>PrefsUtil</b>
+unit makes reading and writing application preferences easier. The XDev Toolkit 
+is here:<p>
+
+<A HREF="http://wiki.lazarus.freepascal.org/XDev_Toolkit">http://wiki.lazarus.freepascal.org/XDev_Toolkit</a><p>
+
+Apple's Mac App Store guidelines are here (login required):<p>
+<A HREF="https://developer.apple.com/appstore/mac/resources/approval/guidelines.html">Mac App Store Review Guidelines</a>
+
+
+<A name="AppMenu"></A><H3>Application menu</H3>
+
+All Mac apps have an "application" menu between the Apple menu
+and the app's File menu on the menu bar at the top of the screen.
+The name of the app menu is the same as your app's name and is obtained from
+your app's bundle name (more below on that).<p>
+
+When you compile an app on Mac with Lazarus, you automatically get the app 
+menu without doing anything yourself, but this default app menu lacks
+two menu items that typically appear in different menus on other 
+platforms, namely the About and Preferences items. Fortunately it's easy 
+to add these yourself conditionally.<p>
+
+First, you'll need to add something like this to your main form's
+declaration:<p>
+
+<pre>
+{$IFDEF DARWIN}
+  AppMenu     : TMenuItem;
+  AppAboutCmd : TMenuItem;
+  AppSep1Cmd  : TMenuItem;
+  AppPrefCmd  : TMenuItem;
+{$ENDIF}
+</pre>
+
+Now add this in the main form's FormCreate handler or some other startup code:
+<pre>
+{$IFDEF DARWIN}
+  AppMenu := TMenuItem.Create(Self);  {Application menu}
+  AppMenu.Caption := #$EF#$A3#$BF;  {Unicode Apple logo char}
+  MainMenu.Items.Insert(0, AppMenu);
+
+  AppAboutCmd := TMenuItem.Create(Self);
+  AppAboutCmd.Caption := 'About ' + BundleName;  //&lt;== BundleName set elsewhere
+  AppAboutCmd.OnClick := AboutCmdClick;
+  AppMenu.Add(AppAboutCmd);  {Add About as item in application menu}
+  
+  AppSep1Cmd := TMenuItem.Create(Self);
+  AppSep1Cmd.Caption := '-';
+  AppMenu.Add(AppSep1Cmd);
+
+  AppPrefCmd := TMenuItem.Create(Self);
+  AppPrefCmd.Caption := 'Preferences...';
+  AppPrefCmd.Shortcut := ShortCut(VK_OEM_COMMA, [ssMeta]);
+  AppPrefCmd.OnClick := OptionsCmdClick;  //&lt;== "Options" on other platforms
+  AppMenu.Add(AppPrefCmd);
+{$ENDIF}
+</pre>
+
+Note that the app menu already has a Quit command, so you'll
+want to delete (conditionally) any Quit or Exit command from your File menu,
+as well as remove About and Preferences commands if they appear elsewhere
+in the main menu (in which case you can just reuse them here instead of
+creating them again).<p>
+
+
+<A name="Buttons"></A><H3>Button size and position</H3>
+
+In the physical world, push buttons are probably more likely these days to
+have a rounded shape than the rectangular shape of buttons on Windows
+(and by transference, Linux). Mac push buttons reflect this and have an oval 
+shape. But with the Lazarus Carbon widgetset, if a button is greater than 22 
+pixels high (Height property), it's drawn as a rectangle, so make sure you 
+limit button height in the Lazarus form designer to 22 or less (TButton, 
+TBitBtn).<p>
+
+That works fine if you're targeting only Mac, but what if you have a cross-platform
+app and you're perfectly happy with the "square" (old fashioned) look on Windows 
+and Linux and want oval buttons only on Mac? Unfortunately, Lazarus form 
+design files (.lfm), like Delphi's form design files (.dfm), don't support 
+any kind of conditional property values. So what to do?<p>
+
+One solution would be to have two sets of form files, but this seems like
+overkill if all you want is oval buttons, although it does allow you then
+to modify anything else in the form (useful elsewhere as we'll see later).<p>
+
+Another approach is to use a utility like the XDev Toolkit's DfmToLfm converter
+to reduce button height automatically in form files that you're converting
+from Delphi.<p>
+
+A third possibility would be to reduce button height at runtime, using 
+conditional code.<p>
+
+On a Mac dialog with a Cancel button, the Cancel button is positioned to the
+left of the "action" button (OK, Save, etc.). This is opposite the usual way 
+that buttons are positioned on Windows. Again, what to do?<p>
+
+If you don't want two sets of form files, you could do something like this
+to avoid sprinkling conditional code throughout your form Pascal files:
+
+<pre>
+procedure TMainForm.CheckOKCancelBtns(OKBtn     : TControl;
+                                      CancelBtn : TControl);
+ {Swap OK and Cancel button positions on Mac.}
+{$IFDEF DARWIN}
+var
+  SaveLeft : Integer;
+begin
+  if OKBtn.Left &lt; CancelBtn.Left then
+    begin
+    SaveLeft := OKBtn.Left;
+    OKBtn.Left := CancelBtn.Left;
+    CancelBtn.Left := SaveLeft;
+    end;
+{$ELSE}  {Do nothing}
+begin
+{$ENDIF}
+end;  {TMainForm.CheckOKCancelBtns}
+</pre>
+
+Now each place where you invoke a dialog box, add a single line of code
+(which is basically a no-op on other platforms):
+
+<pre>
+  SomeDlg := TSomeDlg.Create(Application);
+  try
+    CheckOKCancelBtns(SomeDlg.OKButton, SomeDlg.CancelButton);
+    if ShowDlg.ShowModal &lt;&gt; mrOK then
+      Exit;
+    ...
+  finally
+    SomeDlg.Free;
+    end;
+  end;
+</pre>
+
+While improper button position is one thing that will really flag your app
+as a port from an alien platform, there are other important button 
+differences as well. For example, Mac buttons normally appear at the bottom 
+right of the dialog. For more information, refer to Apple's Human Interface 
+Guidelines (HIG):<p>
+
+<A HREF="https://developer.apple.com/library/mac/#documentation/UserExperience/Conceptual/AppleHIGuidelines/XHIGIntro/XHIGIntro.html">Apple Human Interface Guidelines</a>
+
+
+<A name="Dialogs"></A><H3>Dialog boxes and modal sheets</H3>
+
+Mac apps tend to use fewer modal dialogs than apps on Windows. For example,
+the About and Preferences dialogs in most Mac apps are modeless. They also
+lack an OK or Close or Cancel button, relying instead on the title bar's close 
+button to dismiss the dialog. This means that changes in preferences that
+affect the app's look (for example, colors) tend to go into effect as soon 
+as they're made, rather than after the dialog is closed.<p>
+
+When a Mac app does need a user response before it can proceed, it normally 
+uses a modal "sheet", not a modal dialog. A modal sheet does not  
+block access to the rest of the application the way a modal dialog does. It also 
+has a different look, "descending" from the main window's title bar as though 
+pulled down ("unfurl" is Apple's term), rather than popping up like a dialog.
+A sheet is "document modal" rather than "application modal".<p>
+
+Unfortunately, sheets are an alien concept to Delphi VCL and thus
+Lazarus LCL, so you won't be able to use them in your Lazarus apps. And you
+will probably never be able to use them, even in a future Cocoa-based Lazarus,
+unless a sea change occurs in the LCL and support is added for sheets.
+If you're developing in Pascal with Cocoa but not using the LCL, then of course 
+you can (and should) use sheets, but with the LCL this feature will 
+probably remain out of reach. Part of the reason is that when a sheet is 
+run, the app doesn't wait around until the sheet is closed the way it does when
+ShowModal is called. Instead, when the sheet ends, its delegate 
+object is called and that object handles the sheet's results. This requires
+a different program structure than modal dialogs (calling code handles results)
+or modeless dialogs (dialog handles close event).<p>
+
+To display a dialog modelessly while retaining its modal behavior on
+Windows, you can do something conditionally like this:<p>
+
+<pre>
+{$IFDEF DARWIN}
+  if Assigned(AboutBox) then  {Already displayed?}
+    Exit;
+  AboutBox := TAboutBox.Create(Application);
+  AboutBox.OKButton.Visible := False;
+  AboutBox.Show;
+{$ELSE}
+  AboutBox := TAboutBox.Create(Application);
+  try
+    AboutBox.ShowModal;
+  finally
+    AboutBox.Free;
+    end;
+{$ENDIF}
+</pre>
+
+Be sure to add an OnClose handler to your dialog like this:<p>
+
+<pre>
+procedure TAboutBox.FormClose(    Sender: TObject; 
+                              var Action: TCloseAction);
+begin
+{$IFDEF DARWIN}
+  Action := caFree;
+  AboutBox := nil;  {Okay to display again}
+{$ENDIF}
+end;
+</pre>
+
+Note this assumes you're using the global form variable that the Delphi and
+Lazarus form designers declare for you automatically. On Mac, we're also
+using that variable to determine whether it's okay to display the dialog
+since we don't want multiple instances of it.<p>
+
+What else can you do to make your forms look and act more like they do on a 
+Mac? Well, you can make sure that tabbing between controls works correctly.<p>
+
+On a Mac, quite a few controls such as buttons, combo boxes and
+so on do not receive the keyboard focus. They can only be operated with the 
+mouse. This interferes with normal VCL/LCL tab stops. In fact, it's impossible 
+to tab past one of these controls unless you set the control's
+TabStop property to False. Again, if you're targeting only Mac, this is easy
+to do. But if your app targets Windows too, that just flips the tabbing problem 
+back to Windows.<p>
+
+The XDev Toolkit's DfmToLfm converter handles this by inserting TabStop = False
+into the .lfm files it creates from Delphi .dfm files. You could do something 
+similar. That is, you could have two sets of .lfm files. You only edit one set 
+and auto-create the other using some kind of converter, which inserts the 
+TabStop property. Then on Mac you would conditionally use the second set of 
+forms.<p>
+
+
+<A name="VersionInfo"></A><H3>Info.plist file and version info</H3>
+
+OS X uses property list files (<b>.plist</b> extension) in a number of places. 
+One of the first places you'll encounter a property list file is in your
+app bundle's <b>Info.plist</b> file.<p>
+
+A property list file is just an XML file of key-value pairs. You tell OS X
+about your app via the app's Info.plist file. You can also use it to store
+version information for your app.<p>
+
+Actually, there's already a number of keys in the Info.plist file that
+correspond to items in a version resource embedded in a Windows 
+executable. For example, the Info.plist key CFBundleShortVersionString 
+key is similar to FileVersion and the NSHumanReadableCopyright key can 
+be used like LegalCopyright.<p>
+
+When you first compile a Lazarus app, you can let the IDE create the app
+bundle and its Info.plist file for you, but this is only the most rudimentary
+of Info.plist files. To edit and add to it, you can either use a text editor
+or you can double-click the Info.plist file and edit it in the OS X <b>Property
+List Editor</b> app.<p>
+
+You can also add your own custom keys, naming the key using your app's bundle 
+identifier to ensure they're unique and won't collide with any future 
+Apple keys. For example, your bundle identifier should be in this form:<p>
+
+<pre>
+  &lt;key&gt;CFBundleIdentifier&lt;/key&gt;
+  &lt;string&gt;com.mycompany.myapp&lt;/string&gt;
+</pre>
+
+Now just use it to prefix your own keys, like this to add CompanyName 
+to your Info.plist file:<p>
+
+<pre>
+  &lt;key&gt;com.mycompany.myapp.CompanyName&lt;/key&gt;
+  &lt;string&gt;My Company, Inc.&lt;/string&gt;
+</pre>
+
+To retrieve version info (or anything else) from your app's Info.plist file
+at runtime (for use in an About box, for example), you can employ
+something like this little function from the PropListUtil unit:<p>
+
+<pre>
+function GetInfoPlistString(const KeyName : string) : string;
+ {Retrieve key's string value from app bundle's Info.plist file.}
+var
+  BundleRef : CFBundleRef;
+  KeyRef    : CFStringRef;
+  ValueRef  : CFTypeRef;
+begin
+  Result := '';
+  BundleRef := CFBundleGetMainBundle;
+  if BundleRef = nil then  {Executable not in an app bundle?}
+    Exit;
+  AnsiStrToCFStr(KeyName, KeyRef);
+  try
+    ValueRef := CFBundleGetValueForInfoDictionaryKey(BundleRef, KeyRef);
+    if CFGetTypeID(ValueRef) &lt;&gt; CFStringGetTypeID then  {Value not a string?}
+      Exit;
+    Result := CFStrToAnsiStr(ValueRef);
+  finally
+    FreeCFRef(KeyRef);
+    end;
+end;  {GetInfoPlistString}
+</pre>
+
+You use the function like this in your program:<p>
+
+<pre>
+  BundleName := GetInfoPlistString('CFBundleName');
+  BundleId := GetInfoPlistString('CFBundleIdentifier');
+  CompanyName := GetInfoPlistString(BundleId + '.CompanyName');
+</pre>
+
+You can also use the PropListUtil unit's TCFPropertyList class to load an
+entire property list file.<p>
+
+For more information about Info.plist keys, refer to Apple's docs:<p>
+
+<A HREF="http://developer.apple.com/library/mac/documentation/General/Reference/InfoPlistKeyReference/Introduction/Introduction.html">Information Property List Key Reference</a>
+
+
+<A name="Preferences"></A><H3>Preferences</H3>
+
+Application preferences are stored in the ~/Library/Preferences folder. OS X
+automatically creates a preferences file for you when you run your app, naming
+it using your app's bundle identifier with the .plist extension.<p>
+
+Since preferences are stored in a property list file (key-value pairs), the
+preference values can be any of the property list object types (CFString, 
+CFBoolean, CFNumber, CFDate, CFData, CFArray and CFDictionary). For example
+to write a string value to the preferences file, you could use the 
+TCFPreferences class from the PrefsUtil unit:<p>
+
+<pre>
+  Prefs := TCFPreferences.Create;
+  try
+    Prefs.SetAppString('Editor:FontName', 'Monaco');
+  finally
+    Prefs.Free;
+    end;
+</pre>
+
+Note the format of the key name. This is the way TextWrangler
+names its preference keys; it seems like a good approach.<p>
+
+To read a preference string value, you can use the same class:<p>
+
+<pre>
+  Prefs := TCFPreferences.Create;
+  try
+    FontName := Prefs.GetAppString('Editor:FontName');
+  finally
+    Prefs.Free;
+    end;
+</pre>
+
+For more information about preferences, refer to Apple's docs:<p>
+
+<A HREF="https://developer.apple.com/library/mac/#documentation/MacOSX/Conceptual/BPRuntimeConfig/Articles/UserPreferences.html">The Preferences System</a>
+
+<A name="DropFiles"></A><H3>Double-clicking and dropping your app's files</H3>
+
+The Lazarus wiki covers how to add an icon to your app bundle so the icon is
+displayed on the Dock for your app:<p>
+
+<A HREF="http://wiki.lazarus.freepascal.org/OS_X_Programming_Tips#Adding_an_icon_to_your_app_bundle">Adding an icon to your app bundle</a><p>
+
+The next step is to associate that icon with file types that your app can open 
+and also to associate those file types with your app. You do that by adding
+a section to your app bundle's Info.plist file that looks like this (for
+files with the .myext extension):<p>
+
+<pre>
+  &lt;key&gt;CFBundleDocumentTypes&lt;/key&gt;
+  &lt;array&gt;
+    &lt;dict&gt;
+      &lt;key&gt;CFBundleTypeRole&lt;/key&gt;
+      &lt;string&gt;Editor&lt;/string&gt;
+      &lt;key&gt;CFBundleTypeExtensions&lt;/key&gt;
+      &lt;array&gt;
+        &lt;string&gt;myext&lt;/string&gt;
+      &lt;/array&gt;
+      &lt;key&gt;CFBundleTypeIconFile&lt;/key&gt;
+      &lt;string&gt;myapp.icns&lt;/string&gt;
+      &lt;key&gt;CFBundleTypeMIMETypes&lt;/key&gt;
+      &lt;string&gt;text/myapp&lt;/string&gt;
+      &lt;key&gt;CFBundleTypeName&lt;/key&gt;
+      &lt;string&gt;My App&lt;/string&gt;
+      &lt;key&gt;CFBundleTypeOSTypes&lt;/key&gt;
+      &lt;array&gt;
+        &lt;string&gt;****&lt;/string&gt;
+      &lt;/array&gt;
+    &lt;/dict&gt;
+  &lt;/array&gt;
+</pre>
+
+But this isn't really of much use if your app can't open a file that's been
+double-clicked. Typically on Windows you check ParamStr(1) at startup to see if
+a file name was passed to the app on the command line as a result of double
+clicking the file. But ParamStr doesn't work that way on OS X. Instead,
+you need to add a drop-file handler to your main form, as follows:<p>
+
+<pre>
+{$IFDEF DARWIN}
+    procedure DropFiles(      Sender   : TObject;
+                        const FileNames: array of string);
+{$ENDIF}                        
+</pre>
+
+Then do this at startup, for example in your main form's FormCreate handler:<p>
+
+<pre>
+{$IFDEF DARWIN}
+  OnDropFiles := DropFiles;
+{$ENDIF}
+</pre>
+
+And implement the handler like this:<p>
+
+<pre>
+{$IFDEF DARWIN}
+procedure TMainForm.DropFiles(      Sender    : TObject;
+                              const FileNames : array of string);
+ {When start app by double-clicking one of its files,
+   file name passed to this event handler.}
+begin
+  if High(FileNames) &gt;= 0 then  {At least one file passed?}
+    begin
+    {do something with FileNames[0]}
+    end;
+end;
+{$ENDIF}                        
+</pre>
+
+A few things worth noting:<p>
+<ul>
+  <li>OnDropFiles is a standard event property that can be set in the Lazarus 
+      form designer. However, you can also set it at runtime like this, for
+      example if you want to conditionally restrict it and its handler to Mac.<p>
+  <li>This method also adds support for opening a file that's been dropped
+      on your app on the Dock. If your app is not currently running, this 
+      also starts your app.<p>
+  <li>Since FileNames is an array, this means more than one file can be
+      dropped and opened at the same time, for example if your app supports
+      a multiple document interface.<p>
+  <li>If your app can only open one file at a time (single document interface), 
+      you'll probably want to check in the event handler if a file is already 
+      open and whether it needs to be saved first before the new file is opened.
+</ul>
+
+For more information on the relevant Info.plist keys, consult Apple's docs.
+
+
+<A name="Help"></A><H3>Help</H3>
+
+On the Mac, you can add simple help to your app without any programming.
+If your help is in a single HTML file, here's all you have to do:<p>
+
+<OL>
+  <LI>Create a help folder below your app bundle's Resources folder, for example
+      named Help.<p>
+  <LI>Add this tag to the &lt;head&gt; section of your HTML file:<br>
+<pre>
+  &lt;meta name="AppleTitle" content="My App's Help"&gt;
+</pre>
+  <LI>Place your HTML file in the help folder.<p>
+  <LI>Add two keys to your app bundle's Info.plist file:<br>
+<pre>
+  &lt;key&gt;CFBundleHelpBookFolder&lt;/key&gt;
+  &lt;string&gt;Help&lt;/string&gt;
+  &lt;key&gt;CFBundleHelpBookName&lt;/key&gt;
+  &lt;string&gt;My App's Help&lt;/string&gt;
+</pre>
+</OL>
+
+This automatically adds a Help menu with two items to your app's menu bar.
+The first item is the familiar Search command with its text box where you
+type in a help topic or keyword to search for. The second item is for your
+help file - when you choose it, your HTML file will be displayed in the
+OS X <b>Help Viewer</b> app.<p>
+
+To provide context sensitive help and also searchable topics and keywords,
+you use the OS X <b>Help Indexer</b> app:<p>
+<OL>
+  <LI>Create your help folder in a localized folder below Resources. For
+      example, if your help is in English, the localized folder would be
+      named English.lproj. That is, the path to your help folder would be 
+      myapp.app/Contents/Resources/English.lproj/Help (note you don't have
+      to name it "Help").<p>
+  <LI>Split up your HTML help into an index file and one file for each topic.
+      The index file is the only one with the meta tag given above.<p>
+  <LI>Start Help Indexer and select your help folder. You can also drag and
+      drop the folder to the Help Indexer on the Dock. Or you can use the 
+      command line utility, <b>hiutil</b>, as follows (change to your help folder 
+      in <b>Terminal</b>):<p>
+<pre>
+  hiutil -Caf Help.helpindex .
+</pre>
+</OL>
+
+Now you can search keywords and HTML anchors (if you indexed them too) in
+Help | Search. To display a topic from within your program when a help
+button is clicked, do this:<p>
+
+<OL>
+  <LI>Set the form's HelpType to htKeyword.<p>
+  <LI>Set the form's HelpKeyword to the anchor's name.<p>
+  <LI>Add a handler like this for the form's help button:<p>
+</OL>
+
+<pre>
+procedure TForm1.Button1Click(Sender: TObject);
+var
+  AnchorCFStrRef : CFStringRef;
+  Status         : OSStatus;
+begin
+  AnsiStrToCFStr(HelpKeyword, AnchorCFStrRef);
+  Status := AHLookupAnchor(nil, AnchorCFStrRef);
+  FreeCFRef(AnchorCFStrRef);
+end;
+</pre>
+
+A few things worth noting:<p>
+<ul>
+  <li>Mac programs usually do not have context-sensitive help that's displayed 
+      when F1 or another key is pressed. Cmd+Shift+? is normally reserved to 
+      display the Help Search menu, not to display a help topic for the current 
+      context.<p>
+  <li>If your main menu already has a Help menu, you'll need to remove it so
+      you don't have two Help menus:<p>
+<pre>
+  MainMenu.Items.Remove(HelpMenu);
+</pre>
+  <li>While developing your help, you may find that the help system's caching is 
+      preventing you from seeing changes. If so, just delete these two folders 
+      from ~/Library/Caches:<p>
+<pre>
+  com.apple.helpviewer
+  com.apple.helpd
+</pre>
+      If order to empty the trash, you may need to shut down <b>helpd</b> 
+      (although it usually shuts down on its own in a few minutes). You can 
+      use the OS X <b>Activity Monitor</b> app to do this.
+</ul>
+
+You can add video or just about anything you want to your help. For more
+information, consult Apple's docs:<p>
+
+<A HREF="http://developer.apple.com/library/mac/documentation/Carbon/Conceptual/ProvidingUserAssitAppleHelp/authoring_help/authoring_help_book.html">Authoring Apple Help</a>
+
+<HR>
+Copyright 2010 by Phil Hess.<P>
+Last revised Nov 17, 2010.
+<P>
+
+</BODY>
+
+</HTML>
