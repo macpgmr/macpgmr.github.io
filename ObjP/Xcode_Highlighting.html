@@ -1,0 +1,58 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<HTML>
+
+<HEAD>
+
+<TITLE>Pascal Syntax Highlighting in Xcode</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<H1>Pascal Syntax Highlighting in Xcode</H1>
+<HR>
+
+<H3>Add Objective Pascal syntax highlighting to Xcode's code editor</H3>
+
+<PRE>
+  <A HREF="XcodeObjectivePascalSyntaxColoring.zip">XcodeObjectivePascalSyntaxColoring.zip</A>
+</PRE>
+
+Download and unzip the two files in this zip file. Run the <B>objp_colors_xcode.sh</B>
+script in a Terminal window. The script does 3 things:<P>
+
+<OL>
+  <LI>Backs up Xcode's DVTFoundation.xcplugindata to DVTFoundation.xcplugindata.bak
+  <LI>Uses PlistBuddy to add an Objective Pascal section to DVTFoundation.xcplugindata
+  <LI>Copies the <B>ObjectivePascal.xclangspec</B> file into the same folder as DVTFoundation.xcplugindata
+</OL>
+
+When you next start Xcode, you should see "Objective Pascal" in the Editor | 
+Syntax Coloring menu - select this for your .pas files. If you don't, do this:<P>
+
+In Finder, look under <B>/var/folders</B> until you find a folder named 
+<B>com.apple.DeveloperTools</B>.
+In this folder you'll see folders that correspond to all of the versions of 
+Xcode that you've ever run on your computer. Rename or delete the current
+version's folder (eg, 7.1-7B91b for Xcode 7.1). This is a cache folder and will
+be recreated the next time Xcode is run. Now start Xcode and you should
+see "Objective Pascal" in the Syntax Coloring menu.<P><BR>
+
+Tip: For a better typing experience with Pascal, uncheck "Syntax-aware indenting"
+in Xcode preferences (on the Text Editing | Indentation tab).<P><BR>
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR<BR>
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,<BR>
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE<BR>
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER<BR>
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,<BR>
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN<BR>
+THE SOFTWARE.
+
+</BODY>
+
+</HTML>

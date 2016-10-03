@@ -1,0 +1,128 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2015 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>ProjectXC</TITLE>
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<BODY>
+
+<CENTER>
+<H1>ProjectXC</H1>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#SettingUp">Setting Up</A><BR>
+<A HREF="#FirstProject">Creating a New Project</A><BR>
+<A HREF="#AddingUI">Adding UI (Outlets and Actions)</A><BR>
+<P>
+
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+These are very preliminary notes on some new tools for creating Objective Pascal
+projects for Xcode 7.<P>
+
+<HR>
+<A name="SettingUp"></A><H2>Setting Up</H2>
+
+<OL>
+<LI><B>Free Pascal compiler</B><P>
+
+Install version 3.0.0 or later.<P>
+
+<A HREF="http://freepascal.org">freepascal.org</A>
+
+<LI><B>ProjectXC source code</B><P>
+
+<A HREF="projectxc-src.zip">projectxc-src.zip</A><P>
+
+<LI><B>Compile fixup_proj</B><P>
+
+fpc fixup_proj
+
+<LI><B>Make sure makeproj.sh script is executable</B><P>
+
+chmod +x makeproj.sh
+
+</OL>
+<HR>
+
+<A name="FirstProject"></A><H2>Creating a New Project</H2>
+
+Run the makeproj.sh script, specifying a template to use and the name of
+the project to create. For example, to create an OS X project:<P>
+
+./makeproj.sh osx-simple ~/MyProjects/test1<P>
+
+Change ~/MyProjects to point to an existing folder where you want the 
+test1 project folder to be created.<P>
+
+Now open test1.xcodeproj in Xcode and choose Product | Run to compile and
+run it.<P>
+<HR>
+
+<A name="AddingUI"></A><H2>Adding the UI (Outlets and Actions)</H2>
+
+An OS X project created based on the <B>osx-simple</B> template is:<P>
+
+<OL>
+ <LI>Simple, not document-based
+ <LI>Uses a storyboard
+ <LI>Does not use Core Data
+ <LI>Includes "dummy" Objective C files that are only used for designing
+     the user interface.
+</OL>
+
+As an example, here's how to add a button to a new project based on the
+<B>osx-simple</B> template:<P>
+
+<UL>
+ <LI>In Xcode, expand your new project's folders in the Navigator panel 
+     on the left.
+ <LI>Select Main.storyboard to open the UI in its designer.
+ <LI>Select the View Controller's View.
+ <LI>Drag and drop a button on the View.
+ <LI>To access the button's properties in code, you'll need to add an outlet 
+     for it. But first click the button in the upper right to show the
+     Assistant editor so you can edit two files at once.
+ <LI>In the right editor, select ViewController.h from the menu at the top.
+ <LI>Make sure the View's button is selected and not its inner NSButtonCell.
+     If in doubt, click the Quick help button (question mark) at the top
+     of the Utilities panel on the right. Make sure it shows NSButton.
+ <LI>Click the Connections button at the top of the Utilities panel.
+ <LI>Click the New Referencing Outlet's button and drag and drop it to where
+     indicated in ViewController.h. When prompted, enter <B>button</B>.
+ <LI>Click the Sent Actions action's button and drag and drop it to where
+     indicated in ViewController.h. When prompted, enter <B>buttonClick</B>.
+ <LI>Now add the equivalent Pascal code to ViewControllerU.pas. <B><I>Tip:</I></B>
+     Copy the commented Pascal code in ViewController.h and paste it 
+     where indicated in ViewControllerU.pas, removing the "//". Your code
+     should look something like this <A HREF="Xcode-test1.jpg">screenshot</A>.
+ <LI>Choose Product | Run, then click the button to change its title to Click Me.
+</UL>
+
+<HR>
+Copyright 2015 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted Oct. 25, 2015; last edited Sept. 20, 2016.
+<P>
+
+</BODY>
+
+</HTML>
