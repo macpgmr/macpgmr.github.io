@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2012 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 13: Using Dropbox API with iOS and OS X</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 13: Using Dropbox API with iOS and OS X</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Requirements">Requirements</A><BR>
+<A HREF="#SDK_Examples">Get the SDK examples working</A><BR>
+<A HREF="#Parse_SDK">Parse the SDK header files</A><BR>
+<A HREF="#Pascal_Example">Get the Pascal example working</A><BR>
+<P>
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+While iOS 5.0 and OS X 10.7 added support for Apple's free iCloud service, 
+iCloud is not available to earlier versions of iOS or OS X and, except
+for the iCloud Control Panel client for Windows, is generally not available
+for other platforms.<P>
+
+Adding support for iCloud to your iOS and OS X apps makes sense in
+many cases, but you may also want to consider adding support for an alternative
+like Dropbox when it's likely that some users will want to be able to 
+share files with unsupported platforms. These notes describe how to do that.<P>
+
+<HR>
+<A name="Requirements"></A><H2>Requirements</H2>
+
+<UL>
+<LI>Free Pascal compilers for i386 and ARM. Installers for FPC 2.6.2 can be
+downloaded from <A HREF="ftp://freepascal.stack.nl/pub/fpc/dist/2.6.2/i386-macosx/">here</A>.<P>
+
+<LI>Dropbox SDKs for iOS and/or OS X, available from here:<P>
+
+<A HREF="https://www.dropbox.com/developers/reference/sdk">https://www.dropbox.com/developers/reference/sdk</A><P>
+
+<LI>Latest Objective C header parser and Dropbox input files, available from here:<P>
+
+<A HREF="iOS_6_Parsing_Status.html">iOS_6_Parsing_Status.html</A><P>
+</UL>
+
+<HR>
+<A name="SDK_Examples"></A><H2>Get the SDK examples working</H2>
+
+<OL>
+<LI>Before you do anything else, make sure you can get the Dropbox SDK Objective C
+example programs working. Both the iOS and OS X SDKs include a DBRoulette
+example, which is a simple photo viewing app that downloads photos from
+the user's storage area for that app on the Dropbox server.<P>
+
+<LI>Open one of the example projects in Xcode and run it (Product | Run). You'll
+get an error message that you haven't set the app key yet. To obtain an app 
+key, log into your Dropbox account and create one:<P>
+
+<A HREF="https://www.dropbox.com/developers/apps">https://www.dropbox.com/developers/apps</A><P>
+
+In iCloud terms, a Dropbox <B>app key</B> is similar to an iCloud "entitlement
+bundle identifier". In both cases, they can be used for more than one app
+that need to share the same files in the cloud. For example, you might have
+a lite version of your app and a full version - both could share the same
+app key/identifier so that a user who upgrades to the full version can 
+continue to use files from the lite version. In our case, you can use the
+same app key for both the iOS and OS X example programs.<P>
+
+Note that app names need to be unique - if the Dropbox site indicates that a
+name is already taken, try adding your initials to the app name.<P>
+
+<LI>With both example programs, change the <B>appKey</B>, <B>appSecret</B> and 
+<B>root</B> where indicated in the app delegate code. Also change the 
+<B>CFBundleURLSchemes</B> key in the project's DBRoulette-Info.plist file. 
+More information and an overview is here:<P>
+
+<A HREF="https://www.dropbox.com/developers/start">https://www.dropbox.com/developers/start</A><P>
+
+Note: Starting with the Setup step, make sure you have iOS selected from the 
+dropdown menu.<P>
+</OL>
+
+<HR>
+<A name="Parse_SDK"></A><H2>Parse the SDK header files</H2>
+
+Refer to this page for help with parsing the Dropbox header files
+and compiling the Pascal Dropbox units (Dropbox_iOS.pas and Dropbox_OSX.pas):<P>
+
+<A HREF="iOS_5_Parsing_Status.html">iOS_5_Parsing_Status.html</A><P>
+
+<HR>
+<A name="Pascal_Example"></A><H2>Get the Pascal example working</H2>
+
+Download this file and unzip it:<P>
+
+<A HREF="Test6_DBiOS.zip">Test6_DBiOS.zip</A><P>
+
+This is the start of a Pascal example program adapted from the iOS version
+of DBRoulette.<P>
+
+The Pascal example program can log in and log out of your Dropbox account. 
+The Objective Pascal code is just a transliteration of the original 
+Objective C code in DBRouletteAppDelegate.m and a bit from RootViewController.m.
+Adapting the remaining code in PhotoViewController.m that actually downloads 
+the photos is left as an exercise for the reader.<P>
+
+To compile the Pascal example, you will need to do the following:<P>
+
+<UL>
+<LI>Open <B>Test6_DBiOS.xcodeproj</B> in Xcode 4.2 or later.<P>
+
+<LI>Change <B>appKey</B> and <B>appSecret</B> where indicated in 
+Test6_DBiOS_AppDelegateU.pas. Also change the <B>CFBundleURLSchemes</B> key 
+in the project's Test6_DBiOS-Info.plist file.<P>
+
+<LI>On the project's Build Settings tab, check the path in the
+<B>FPC_COMMON</B> setting's <B>-Ff</B> switch to make sure it points 
+to where you unzipped the Dropbox iOS SDK.<P>
+
+<LI>Check the path in the <B>FPC_ARM_UNITS</B> and <B>FPC_SIM_UNITS</B>
+settings' <B>-Fu</B> switch to make sure they point to where your 
+iPhoneAll.o, Dropbox_iOS.o, etc. files are located.<P>
+</UL>
+
+<HR>
+Copyright 2012 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted April 15, 2012; last edited May 9, 2013.
+<P>
+
+</BODY>
+
+</HTML>

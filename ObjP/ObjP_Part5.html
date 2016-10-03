@@ -1,0 +1,406 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2011 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 5: Sharing and Editing Files with an iOS App</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 5: Sharing and Editing Files with an iOS App</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Requirements">Requirements</A><BR>
+<A HREF="#The Sandbox">The Sandbox</A><BR>
+<A HREF="#Sharing Files">Sharing Files</A><BR>
+<A HREF="#TMyDocument Class">TMyDocument Class (the "model")</A><BR>
+<A HREF="#User Interface">User Interface (the "view")</A><BR>
+<A HREF="#Test4AppDelegate Class">Test4AppDelegate Class (the "controller")</A><BR>
+<A HREF="#Running the App">Running the App</A><BR>
+<A HREF="#A Few Words about Dropbox">A Few Words about Dropbox</A><BR>
+<P>
+
+<HR>
+
+<A name="Introduction"></A><H2>Introduction</H2>
+
+These notes describe how to share files with an iOS app, as well
+how to open and edit those files. The provided example app is a simple file 
+viewer and editor that touches on a variety of technologies, including the 
+following:<P>
+
+<UL>
+<LI>iOS file directories and file access
+<LI>iTunes, Mail, Dropbox
+<LI>Defining your app's file types
+<LI>Free Pascal's XML units
+<LI>UISegmentedControl
+<LI>A new NSHelpers string-conversion unit
+<LI>Opening a file when asked
+<LI>Saving and restoring program state
+</UL>
+
+Apple's "iOS Application Programming Guide" is available
+<A HREF="http://developer.apple.com/library/ios/#documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/Introduction/Introduction.html#//apple_ref/doc/uid/TP40007072-CH1-SW1">here</A>
+and the "iOS Development Guide" is available
+<A HREF="http://developer.apple.com/library/ios/#documentation/Xcode/Conceptual/iphone_development/000-Introduction/introduction.html">here</A>.<P>
+<HR>
+
+<A name="Requirements"></A><H2>Requirements</H2>
+
+<UL>
+<LI>See Part 3 if you'll be developing for the iOS Simulator.<P>
+<LI>See Part 4 if you'll be developing for an iOS device.<P>
+</UL>
+
+<HR>
+
+<A name="The Sandbox"></A><H2>The Sandbox</H2>
+
+When you install an app from the App Store, the app's "home directory" and
+several subdirectories get created on your iOS device. The same thing happens 
+when you build and run an app in Xcode - the app gets installed in iOS Simulator 
+or on an iOS device. These directories are illustrated in the figure below.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 5-1. Contents of an iOS app's home directory.<P>
+<IMG src="ObjP_Part5-1.jpg" hspace="10" align="left" /><P>
+
+Documents - create files here that you want the user to see in iTunes; user
+can also copy files to and from Documents in iTunes.<BR>
+
+Library - create files here that you don't want the user to see in iTunes.<BR>
+
+Caches - create support files here that should persist between launches of the app.<BR>
+
+Preferences - store app preferences and program state here.<BR>
+
+Test4 - the app bundle (see below).<BR>
+
+tmp - create temporary files here.<BR>
+
+<BR clear="all"><P>
+
+Note that files in the Documents, Library and Preferences subdirectories are 
+backed up by iTunes when you sync the device. And when you install an update,
+the Documents and Library contents are copied to the new application 
+directory.<P>
+
+An iOS app bundle is similar to an OS X app bundle, as shown in the two figures
+below. Since the app is code-signed on an actual iOS device, its bundle has  
+several additional files.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 5-2. Contents of app bundle in iOS Simulator.<P>
+<IMG src="ObjP_Part5-2.jpg" hspace="10" /><P>
+
+&nbsp;&nbsp;&nbsp;Figure 5-3. Contents of app bundle on iOS device.<P>
+<IMG src="ObjP_Part5-3.jpg" hspace="10" /><P>
+
+Since the app bundle on an iOS device is code-signed, you can't write
+to that directory, although you can open files there read-only (for example,
+additional files that you distribute with your app). In addition, your
+app can't read or write other apps' files; nor can other apps read
+or write your app's files.<P>
+
+It's normal to "sandbox" users on the same computer, as well to restrict
+user access to system files, but separating apps like this might take some 
+getting used to. On most platforms you normally use a variety of apps
+to create, delete, move and copy files, whether that be with Finder, a text
+editor, IDE, etc. The implication of sandboxing is that this is not the
+way you work with files on an iOS device. So how do you do those sorts 
+of things?<P>
+
+<HR>
+
+<A name="Sharing Files"></A><H2>Sharing Files</H2>
+
+You can think of your computer's iTunes app as kind of a Finder substitute
+for your iOS device. Once you've added the <B>UIFileSharingEnabled</B> key 
+to your app's Info.plist file and set it to YES, you can connect your device 
+to your computer, select the device in iTunes, then click the Apps tab and 
+scroll down to the bottom of the iTunes window. Here you'll see a list of 
+all apps on your device that can share their Documents files with your 
+computer via iTunes. This is also where you can copy files to and from 
+your device and delete files from the device. (<B><I>Tip:</I></B> Dragging 
+a file to the Trash doesn't work in iTunes. Instead, select the file and 
+press the Delete key.)<P>
+
+iTunes is fine when your computer is handy, but what if you only have your
+device? In that case, you can use either e-mail or a free service like
+<A HREF="https://www.dropbox.com">Dropbox</A> to copy files to your device
+and then to your app.<P>
+
+In Mail, you can select a file attachment and touch the Open In button. Mail
+will then display a list of apps that can open that file. Similarly, in 
+Dropbox, you can select a file and touch the little button with the arrow.
+Dropbox will then display a list of apps that can open that file.<P>
+
+So how do Mail and Dropbox know that your app can open a particular file?
+You tell these (and other) apps about what types of files your app can 
+open via its Info.plist file.<P>
+
+For the example app, start by creating a new app in Xcode4 using the Objective
+Pascal project template for a Window-Based Application. Enter <B>Test4</B> for 
+the Product Name, <B>Test4AppDelegate</B> for the App Delegate Class, and
+select <B>iPhone</B> for the Device Family.<P>
+
+Now open <B>Test4-Info.plist</B> in Xcode4 and add the <B>CFBundleDocumentTypes</B>
+and <B>UTExportedTypeDeclarations</B> sections as shown in the figure below.
+Use your own bundle identifier if it's different from com.myjunk. 
+And be sure to add the UIFileSharingEnabled key as well.<P>
+
+<B><I>Tip:</I></B> If you don't see the key names, right-click and choose
+<B>Show Raw Keys/Values</B> from the popup menu.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 5-4. Defining an app's file type.<P>
+<IMG src="ObjP_Part5-4.jpg" hspace="10" /><P>
+
+If you followed the example in <A HREF="ObjP_Part2.html">Part 2</A>, the 
+<B>mydoc1</B> file extension should look familiar. In fact, the example app 
+given in this article is essentially the mobile version of Part 2's Cocoa app. 
+Once you have it running, you'll be able to work with files created by the 
+Cocoa app. But first let's construct the app, which follows the familiar
+Model-View-Controller (MVC) "design pattern".<P>
+
+<HR>
+
+<A name="TMyDocument Class"></A><H2>TMyDocument Class (the "model")</H2>
+
+<I>"The model portion defines your application's underlying data engine and 
+is responsible for maintaining the integrity of that data."</I>
+<A HREF="http://developer.apple.com/library/ios/#documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/CoreApplication/CoreApplication.html#//apple_ref/doc/uid/TP40007072-CH3-SW15">(iOS Application Programming Guide)</A><P>
+
+If you refer back to Part 2, you'll see that the Cocoa document-based app
+is implemented via the MyDocument subclass of NSDocument and the
+MyWindowController subclass of NSWindowController. MyDocument's code uses an
+NSXMLDocument object to read and write the .mydoc1 XML files. But
+the iOS Foundation framework does not include the NSXMLDocument class, and its
+suggested replacement, NSXMLParser, is an event-driven parser rather than a
+tree-oriented parser. So to keep things simple, the mobile app uses 
+Free Pascal's XML units to implement its TMyDocument class for reading and 
+writing .mydoc1 files.<P>
+
+The source for the MyDocument unit is <A HREF="MyDocument.pas">here</A>.
+Place <B>MyDocument.pas</B> in the Xcode project's Test4 folder where the other 
+source files are located. Once you've done this, you can right-click Test4 in 
+the Project navigator list and choose Add Files to add MyDocument.pas to the
+project if you want to be able to view it in Xcode.<P>
+
+Note that TMyDocument is a normal TObject descendant rather than an NSObject
+descendant. This means the MyDocument.pas unit can be compiled on any platform
+that Free Pascal supports. Also, since Free Pascal's XML units accept and
+return WideStrings, TMyDocument works with WideStrings too.<P>
+
+Test the TMyDocument class by creating several .mydoc1 files that you'll use
+later with the finished mobile app. For example, you can use a console app like 
+below to create both an empty file and files with some data. You can also create
+.mydoc1 files by running the Test2 app from Part 2.<P>
+
+<PRE>
+program CreateMyDoc;
+uses
+  MyDocument;
+var
+  XmlDoc : TMyDocument;
+begin
+  XmlDoc := TMyDocument.Create;
+  XmlDoc.WriteToFile('empty1' + MyDocExt);
+  
+  XmlDoc.SetName('Some name');
+  XmlDoc.WriteToFile('somedata1' + MyDocExt);
+
+  XmlDoc.SetName('Another name');
+  XmlDoc.WriteToFile('somedata2' + MyDocExt);
+
+  XmlDoc.Free;
+end.
+</PRE>
+
+<HR>
+
+<A name="User Interface"></A><H2>User Interface (the "view")</H2>
+
+<I>"The view portion defines the user interface for your application and has 
+no explicit knowledge of the origin of the data displayed in that interface."</I>
+<A HREF="http://developer.apple.com/library/ios/#documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/CoreApplication/CoreApplication.html#//apple_ref/doc/uid/TP40007072-CH3-SW15">(iOS Application Programming Guide)</A><P>
+
+In Xcode 4, drop three UILabels, a UISegmentedControl and a UITextField onto the
+blank window and position and size them so they look something like the 
+figure below, then change their settings as indicated.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 5-5. The example app's window layout.<P>
+<IMG src="ObjP_Part5-5.jpg" hspace="10" align="left" /><P>
+UILabel - set Text to "[File x of y]" and create an outlet named labelFileNum
+(hint: drag its New Referencing Outlet to Test4AppDelegate.h).<P>
+UILabel - set Text to "[No folder]" and create an outlet named labelFileFolder.<P>
+UILabel - set Text to "[No file]" and create an outlet named labelFileName.<P>
+UISegmentedControl<BR>
+ - Set Segment 0's Title to "Previous" and Segment 1's Title to "Next".<BR>
+ - Uncheck the Selected box for both segments and check the control's Momentary 
+box - that way the control will look and act like two buttons rather than a 
+switch.<BR>
+ - Create an outlet named segPrevNext.<BR>
+ - Create an action for the Value Changed event and name the receiving method
+segValueChanged (hint: drag the Value Changed event to Test4AppDelegate.h).<P>
+UITextField<BR>
+ - Increase font size to 17.<BR>
+ - Create an outlet named textFieldMyData.<BR>
+ - Set Test4AppDelegate to be its delegate (hint: drag the UITextField's 
+ delegate outlet to the yellow cube).
+<BR clear="all"><P>
+
+The layout is similar to what the user will see if Test4 can't find any files 
+in Documents.<P>
+
+In a real app you would probably use a UITableView to display a
+list of files to choose from and a UINavigationController to create another
+view where the actual editing takes place, but that's beyond the scope of this 
+article. Instead, you'll use the Previous and Next buttons for moving from 
+one file to another, displaying the current file's number, location, name and 
+contents in simple controls on the main view.
+
+<HR>
+
+<A name="Test4AppDelegate Class"></A><H2>Test4AppDelegate Class (the "controller")</H2>
+
+<I>"The controller portion acts as a bridge between the model and view and 
+coordinates the passing of data between them."</I>
+<A HREF="http://developer.apple.com/library/ios/#documentation/iPhone/Conceptual/iPhoneOSProgrammingGuide/CoreApplication/CoreApplication.html#//apple_ref/doc/uid/TP40007072-CH3-SW15">(iOS Application Programming Guide)</A><P>
+
+The complete source for the Test4AppDelegateU unit is <A HREF="Test4AppDelegateU.pas">here</A>.
+You can either use this file to replace the default <B>Test4AppDelegateU.pas</B> 
+file created by the project template or copy and paste its contents over the 
+default code.<P>
+
+The Test4AppDelegate class uses some routines from the NSHelpers string-conversion
+unit. The source for the NSHelpers unit is <A HREF="NSHelpers.pas">here</A>.
+Copy <B>NSHelpers.pas</B> into the project's Test4 folder with the other source 
+files. You can also add it to the project if you want. If you want to use 
+NSHelpers in other projects, you might consider compiling it the way you did
+the iPhoneAll unit and placing NSHelpers.o and NSHelpers.ppu in the same 
+locations as the iPhoneAll compiled files. (You can use the same compile-arm.sh 
+script so that the compiled NSHelpers.o file contains both armv6 and armv7 code.)<P>
+
+The Test4AppDelegate class is the most complicated part of the example app
+and several of its methods merit some discussion.<P>
+
+<UL>
+<LI>application_didFinishLaunchingWithOptions<P>
+This method is called when the app is launched. It gets the names of all files 
+in the Documents directory and adds the names of all .mydoc1 files to a 
+TStringList object it creates. It then gets the name of the file it had open the 
+last time it was run (from the app's Preferences). Then it determines if the
+file still exists and, if so, prepares to open it. However, if the app was 
+launched as a result of a request to open a file that's been copied to the 
+app's Inbox, it delays opening the last-used file.<P>
+
+Note that iOS has a case-sensitive file system. Comparisons of file names
+and extensions can be done with ordinary comparison operators (=, &lt;&gt;) rather
+than with, say, the SameText function as you would on Windows.<P>
+
+<LI>application_openURL_sourceApplication_annotation<P>
+This method is called with the name of the requested file to open. It attempts
+to move the file from the app's Inbox to its Documents directory. If successful,
+it opens the file. If a file with the same name prevents the move, it deletes 
+the file from the Inbox, displays an alert to the user, and opens the file the 
+app would have opened if launched by the user.<P>
+
+The Inbox directory (under Documents) is used as kind of a "staging" area.
+Your app can move files from Inbox or delete them once it has copied them
+elsewhere, but it can't create files in the Inbox directory.<P>
+
+In a real app you would probably want to prompt whether it's okay to overwrite
+the file or perhaps rename the file rather than just rejecting it the way
+this method does.<P>
+
+<LI>applicationDidEnterBackground<P>
+This method is called when the app is about to enter the background state or
+terminate. It saves the name of the currently open file in the app's 
+Preferences directory so it can reopen the file the next time the app
+is launched by the user.
+</UL>
+
+<HR>
+
+<A name="Running the App"></A><H2>Running the App</H2>
+
+Build and run the app in the iOS Simulator. You should see something that looks
+like the user interface layout illustrated above.<P>
+
+Now copy some .mydoc1 files into the Documents directory of where the app is
+installed in the Simulator. On my system, it's located here:<P>
+
+<PRE>
+  ~/Library/Application Support/iPhone Simulator/4.2/Applications/030FC85D-03C5-4BA0-B45F-BA13FAC4B7FB
+</PRE>
+
+This path indicates that the app was compiled with a deployment target of 
+iOS 4.2. The long sequence of hex digits is the application ID and will be 
+different on your computer.<P>
+
+Now when you run the app in the Simulator you should see the number of files
+you copied into Documents and the first file open in the app. If you edit the 
+file's content, the change will be saved automatically when you move to a 
+different file or press the Simulator's home button.<P>
+
+Next build and run the app on an iOS device. Once you have it working, shut
+down the app and copy one or more .mydoc1 files to the app's Documents
+directory via iTunes.<P>
+
+Finally, send a .mydoc1 file as an e-mail attachment or copy it into the
+Dropbox folder on your computer, then try opening the file in your app
+from Mail or Dropbox on the iOS device.<P>
+
+The finished iOS app should look something like the figure below.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 5-6. The finished app.<P>
+<IMG src="ObjP_Part5-6.png" hspace="10" border="1" /><P>
+
+<HR>
+
+<A name="A Few Words about Dropbox"></A><H2>A Few Words about Dropbox</H2>
+
+The approach described above is simple - any file copied to a Dropbox folder
+gets copied to the Dropbox server the next time the Dropbox client app is running
+and the computer or device has Internet access. Once on the Dropbox server, 
+the user can access the file on other computers and devices. 
+However, this approach requires additional user steps to get a file to your 
+app and doesn't provide a way to get a file <I>from</I> your app. 
+(You could add to your app the capability to "open" a file in Dropbox 
+similar to the way Dropbox "opens" a file in your app. Refer to the 
+UIDocumentInteractionController class. To see how this works, open a Mail 
+file attachment in Dropbox.)<P>
+
+Dropbox does not share files via iTunes. Instead, Dropbox client apps
+on OS X, iOS, Windows, etc. all use a "REST API over HTTP" to copy files
+to and from the Dropbox server. Your app can use this API too and Dropbox
+provides an Objective C SDK for that purpose. Your app would then be able to
+copy files to and from the Dropbox server without user intervention. More 
+information is <A HREF="https://www.dropbox.com/developers/docs">here</A>.<P>
+
+Dropbox currently provides 2GB of space for free. This should be plenty if 
+you're only using it to move files between computers and devices. If you need
+more space, you can pay for it. Note that Apple's iCloud will likely provide 
+similar services.<P>
+
+<HR>
+Copyright 2011 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted July 23, 2011; last edited Dec. 30, 2011.
+<P>
+
+</BODY>
+
+</HTML>

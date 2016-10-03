@@ -1,0 +1,266 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2012 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 12: Adding Windows to a Cocoa App</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 12: Adding Windows to a Cocoa App</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Requirements">Requirements</A><BR>
+<A HREF="#Adding_Window">Adding a window to your Xcode project</A><BR>
+<A HREF="#Displaying_Window">Displaying the window as a modal sheet</A><BR>
+<A HREF="#Running_App">Running the app</A><BR>
+<A HREF="#Adapting_Window">Adapting the window</A><BR>
+<P>
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+Most Mac apps are document-based, as described in <A HREF="ObjP_Part2.html">Part 2</A>.
+This means they can open multiple documents, each in its own window, and most
+of the menu bar commands apply only to the current window or document, not
+to the entire application. As a result, a document-based app generally does
+not use modal dialogs, since a modal dialog would block access to the other 
+windows until the user closes the dialog. Instead, document-based apps display 
+dialogs as <I>modal sheets</I>, which are somewhere between modal dialogs and 
+non-modal ones. With a modal sheet, the user can still switch to one of the 
+other document windows, without first closing the dialog. These dialogs
+are often described as being <I>document modal</I>, rather than <I>application 
+modal</I>.<P>
+
+Some Mac apps are both document-based <I>and</I> tab-based. For example, with
+Safari, you can choose File | New Window <I>or</I> File | New Tab. When you
+open multiple windows in Safari, you can then resize each window, position
+them side-by-side, etc. When you choose a menu command that displays a dialog
+(for example, File | Save As), the resulting modal sheet only applies to
+the currently focused window; you can still switch to a different window
+while the dialog is open. When you use multiple tabs, the dialog still
+applies only to the currently focused tab, but now it blocks access to the
+other tabs since all the tabs are in the same window. With this type of app,
+the user can then choose between the flexibility of multiple windows or the
+compactness of a single window with multiple tabs.<P>
+
+These notes describe how to add windows to your document-based Cocoa
+apps and display them as modal sheets.<P>
+
+<HR>
+<A name="Requirements"></A><H2>Requirements</H2>
+
+<UL>
+<LI>A document-based Cocoa app like the Test2 example of 
+<A HREF="ObjP_Part2.html">Part 2</A>.<P>
+
+<LI>ObjP_ListWindowControllerU.pas and ObjP_ListWindow.xib files from
+<A HREF="ObjP_ListWindow.zip">here</A>.<P>
+
+</UL>
+
+<HR>
+<A name="Adding_Window"></A><H2>Adding a window to your Xcode project</H2>
+
+<A HREF="ObjP_Part7.html">Part 7</A> discusses a custom Pascal template for
+Xcode that you can use to add secondary views to an iOS app. A similar
+custom template could be used here as well (if someone's interested in 
+creating it) to automate the multiple steps involved in adding a window. 
+However, this article takes a different approach, starting instead with a 
+finished window that you can add to your own project and adapt as necessary.<P>
+
+In case you're wondering, here are the manual steps for adding a new window
+to your Xcode project:<P>
+
+<OL>
+<LI>Choose File | New | New File and choose Window from the User Interface
+tab under Mac OS X. This creates a .xib user interface file.<P>
+<LI>Choose File | New | New File and choose Objective-C class from the Cocoa
+tab under Mac OS X, selecting NSWindowController to subclass. This creates an 
+.h header file and an .m source file.<P>
+<LI>Create a unit containing the Pascal equivalent to the ObjC class 
+created in step 2.<P>
+<LI>Wire the .xib to the ObjC class. Specifically, you <I>must</I> click
+the .xib's File's Owner button and, on the Custom Class tab, select the step 2
+ObjC class from the list. You can then drag the window's outlet to the
+File's Owner button, thus connecting the window with the class that will
+manage it.
+</OL>
+
+In this example, instead of creating a window manually, we'll use one that's
+ready to use, as follows:<P>
+
+<OL>
+<LI>Unzip <B>ObjP_ListWindow.zip</B> that you downloaded above.<P>
+
+<LI>Copy its files into your project folder. Xcode doesn't really care where
+you put the files, although the following organization should make sense:<P>
+<UL>
+<LI>Put <B>ObjP_ListWindow.xib</B> with the project's other .xib files,
+for example in the <B>en.lproj</B> folder.<P>
+<LI>Put <B>ObjP_ListWindowControllerU.pas</B> with the project's other
+Pascal files.<P>
+<LI>If you're not already using it in your project, put <B>NSHelpers.pas</B>
+with the project's other Pascal files too (ObjP_ListWindowControllerU.pas
+needs NSHelpers' string conversion functions).<P>
+<LI>Technically, you don't really need <B>ObjP_ListWindowController.h</B> and
+<B>ObjP_ListWindowController.m</B> unless you plan to make changes to the .xib
+file's connections (outlets and actions), but you can put them with the
+project's other .h/.m files for completeness.<P>
+</UL>
+<LI>Open your project in Xcode and tell Xcode about the new files:<P>
+<UL>
+<LI>Right-click the top-level yellow folder in Project navigator and
+choose Add Files, then select <B>ObjP_ListWindow.xib</B>.<P>
+<LI>Now right-click Pascal Source in Project navigator and choose Add Files,
+then select <B>ObjP_ListWindowControllerU.pas</B>.<P>
+Xcode will add this file to the 
+Compile Sources list on the Build Phases tab, but since Xcode does not
+know how to compile a Pascal file, you should remove it from the list -
+select it and click the minus (-).<P>
+<LI>Finally, if you copied the .h/.m files into your project, right-click 
+ObjC Source for Connections in Project navigator and select them.<P>
+</UL>
+</OL>
+
+<HR>
+<A name="Displaying_Window"></A><H2>Displaying the window as a modal sheet</H2>
+
+As its name suggests, the supplied window provides a way to display a
+list of items that the user can select from. In VCL/LCL terms, it
+functions very much like a TForm containing a TListBox and two TButton's.
+However, unlike a VCL/LCL form, we'll display the window as a modal sheet,
+rather than as a modal or non-modal dialog. Here's how you do that:<P>
+
+<UL>
+<LI>Add ObjP_ListWindowControllerU to the uses statement of your main
+window controller's unit (in Part 2's terms, this would be the 
+MyWindowControllerU unit).<P>
+
+<LI>Add a button to your main window (Part 2's MyDocument.xib) and add an 
+action method for the button to its owner class (MyWindowController). When you 
+implement the Pascal equivalent to this method, copy and paste the following 
+code, which creates the window controller object, populates the window's list,
+sets the list's label, then displays the window as a modal sheet:<P>
+
+<PRE>
+procedure MyWindowController.ListBtnClick(sender : id);
+var
+  ListWC : ObjP_ListWindowController;
+begin
+  ListWC := ObjP_ListWindowController.alloc.init;
+
+  ListWC.ListItems.Add('Item 1 goes here');
+  ListWC.ListItems.Add('Item 2 goes here');
+
+  ListWC.window;  {Force window to be loaded so controls respond to messages}
+
+  ListWC.ListLbl.setStringValue(NSSTR('Select an item from the list.'));
+
+  NSApp.beginSheet_modalForWindow_modalDelegate_didEndSelector_contextInfo
+   (ListWC.window, self.window,
+    self, objcselector('ListSheetDidEnd:returnCode:contextInfo:'), 
+    ListWC);
+     {Pass window controller object to delegate's method so it has
+       access to it. Note that beginSheet returns immediately.}
+end;
+</PRE>
+
+<LI>Add another method to the main window controller class that handles the
+window after the user is done with it. In the method's declaration, make sure 
+the message is the same as what you specified in the beginSheet call
+('ListSheetDidEnd:returnCode:contextInfo:').<P>
+
+<PRE>
+procedure MyWindowController.ListSheetDidEnd_returnCode_contextInfo(
+                              sheet       : NSWindow;
+                              returnCode  : NSInteger;
+                              contextInfo : SEL);
+ {Do something with sheet window and contextInfo, then
+   proceed based on value of returnCode.}
+begin
+  sheet.close;  {This will also release window}
+
+  ObjP_ListWindowController(contextInfo).release;
+
+  if returnCode < 0 then  {User cancelled?}
+    Exit;
+    
+   {returnCode contains index of selected item - do something with it} 
+end;
+</PRE>
+</UL>
+
+<B><I>Tip:</I></B> Review the code in ObjP_ListWindowControllerU.pas to see how 
+the list is implemented.<P>
+
+<HR>
+<A name="Running_App"></A><H2>Running the app</H2>
+
+Now compile and run your app, then click the button on the document window
+that opens at startup. The list window should descend from from the 
+document window's title bar as though pulled down ("unfurl" is Apple's term),
+rather than pop up like a modal dialog. One obvious benefit of this is that
+it's clear what the sheet applies to - it applies only to the window that
+it's attached to. The primary benefit is that it doesn't block out everything
+else. For example, you can continue using the program, even File | New, 
+while the sheet is displayed.<P>
+
+Notice how the sheet does not have a title of its own. It's truly a 
+subsidiary of the main window, not something that stands on its own.<P>
+
+<HR>
+<A name="Adapting_Window"></A><H2>Adapting the window</H2>
+
+It's easy to adapt the list window's files and reuse them in other projects,
+even distribute them to other programmers. For example, to modify the
+window's files under a different name, just do this:<P>
+
+<UL>
+<LI>Rename the 4 files.
+<LI>Edit the .pas/.h/.m files and change all occurrences of ObjP_List to reflect
+the new name (for example, ObjP_ListWindow --> MyCool_ListWindow).
+<LI>When you add the new files to a project, be sure to change the .xib's 
+File's Owner class to the new class (on the Custom Class tab).
+</UL>
+
+To change the window layout or add to it, just do that in Xcode as you would
+with any .xib. For example, since the list is implemented using an 
+NSTableView, you could easily make it a multi-column list. Just increase 
+the number of columns for the Table View and revise the 
+tableView_objectValueForTableColumn_row method so it returns an appropriate
+value for each column. <B><I>Tip:</I></B> Enter a unique Identifier value 
+for each Table Column and look for these values in your code, like so:<P>
+
+<PRE>
+  if NSStrToStr(NSString(atableColumn.identifier)) = 'Column 1') then
+    Result := StrToNSStr(somestring)
+  else if NSStrToStr(NSString(atableColumn.identifier)) = 'Column 2') then
+    Result := StrToNSStr(anotherstring);
+</PRE>
+
+And, as always, when in doubt refer to Apple's 
+<A HREF="https://developer.apple.com/library/mac/#documentation/Cocoa/Reference/ApplicationKit/ObjC_classic/_index.html">AppKit docs</A>.<P>
+
+<HR>
+Copyright 2012 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted Feb. 5, 2012.
+<P>
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2011 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 8: Creating a Multi-Architecture Static Library (Objective C)</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 8: Creating a Multi-Architecture Static Library (Objective C)</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Parsing">Parsing the Objective C Header Files</A><BR>
+<A HREF="#Compiling">Compiling the Objective C Classes</A><BR>
+<A HREF="#Using">Using the Static Library in a Pascal App</A><BR>
+<P>
+
+<HR>
+
+<A name="Introduction"></A><H2>Introduction</H2>
+
+These notes describe how to compile Objective C classes into a static library
+that you can use in an Objective Pascal iOS app. The example given is for the
+popular ASIHTTPRequest classes, which are available here:<P>
+<A HREF="http://allseeing-i.com/ASIHTTPRequest/">http://allseeing-i.com/ASIHTTPRequest</A>
+
+<HR>
+
+<A name="Parsing"></A><H2>Parsing the Objective C Header Files</H2>
+
+Before going much further, make sure you can parse the Objective C header 
+files into equivalent Objective Pascal declarations. With a simple class that
+has only a few methods, you could probably just transliterate them manually,
+but with a large number of classes like ASIHTTPRequest, you'll want to use
+the latest FPC header parser, available here:<P>
+
+<A HREF="iOS_6_Parsing_Status.html">iOS_6_Parsing_Status.html</A><P>
+
+The parser includes all of the files needed to parse the ASIHTTPRequest
+header files and compile the Pascal Asihttp unit. To set up the parser for
+other header files, see <A HREF="ObjP_Part9.html">Part 9</A>.<P>
+
+<HR>
+
+<A name="Compiling"></A><H2>Compiling the Objective C Classes</H2>
+
+The easiest way to compile the Objective C classes is to create an
+Xcode project to do it.<P>
+
+<OL>
+<LI>Start Xcode and choose <B>File | New | New Project</B>. On the <B>Framework
+& Library</B> tab, select <B>Cocoa Touch Static Library</B> and click Next.<P>
+
+<LI>Enter the name to use for the library in <B>Product Name</B>. In this 
+example, the Pascal Asihttp unit expects a library named libAsihttp.a, so enter 
+<I>Asihttp</I> - Xcode will add the "lib" prefix to whatever you enter, per 
+convention. Click Next and save the new project wherever you want. The name you 
+entered will also be used to name the project folder.<P>
+
+<LI>You <I>could</I> copy all of the Objective C <B>.h</B> (header) and <B>.m</B> 
+(source) files into the project's source folder and then add them to the 
+project, but it's easier just to add them from wherever they're located. Choose 
+<B>File | Add Files</B> to do that. Note that "adding" does not copy anything, 
+but just points the project to the added files.<P>
+<B><I>Important!</I></B> With the ASIHTTPRequest example, be sure to add all 
+of the .h files and .m files from both the ASIHTTPRequest <B>Classes</B> folder 
+as well as the <B>External/Reachability</B> folder.<P>
+
+<LI>Set the project's <B>iOS Deployment Target</B> to the earliest version of 
+iOS that your app(s) will target to ensure that the classes are not using 
+features that won't be available. You set this on the project's <B>Info</B> tab.<P>
+
+<LI>On the project target's <B>Build Phases</B> tab, click <B>Add Build 
+Phase | Add Run Script</B>, then copy and paste this script into the box for 
+the run script:<P>
+<PRE>
+if [ $PLATFORM_NAME = "iphonesimulator" ]; then
+  cp $BUILT_PRODUCTS_DIR/$EXECUTABLE_PATH $PROJECT_DIR/$EXECUTABLE_PATH
+else
+  $DEVROOT/usr/bin/lipo $BUILT_PRODUCTS_DIR/$EXECUTABLE_PATH $PROJECT_DIR/$EXECUTABLE_PATH -create -output $PROJECT_DIR/$EXECUTABLE_PATH
+fi
+</PRE>
+This script will combine the Simulator and ARM <B>.a</B> (archive) files into a 
+single <B>.a</B> file.<P>
+
+<LI>We want a multi-architecture library that includes support for i386, armv6 
+and armv7. Beginning with Xcode 4.2, the "standard" ARM architecture is now 
+armv7, whereas in earlier versions "standard" included both armv6 and armv7. 
+So with Xcode 4.2 and later, change the <B>ARCHS</B> setting on the project 
+target's <B>Build Settings</B> tab from "Standard (armv7)" to "armv6 armv7".<P>
+
+<LI>To compile, select <B>Simulator</B> for your iOS deployment target and 
+choose <B>Product | Build</B>. Then select <B>iOS Device</B> and choose 
+<B>Product | Build</B> again. Be sure to compile for Simulator first, then for 
+the device (ARM) since the script assumes that order.<P>
+
+<LI>Check that the .a file (libAsihttp.a) has been created okay and contains all 
+architectures. Note that the script creates the .a file in the project's
+top level folder instead of burying it under ~/Library/Developer/Xcode/DerivedData
+along with the other compiled files. Change to this folder and use the 
+<B>file</B> command. For example:<P>
+<PRE>
+file libAsihttp.a
+libAsihttp.a: Mach-O universal binary with 3 architectures
+libAsihttp.a (for architecture armv6):	current ar archive random library
+libAsihttp.a (for architecture armv7):	current ar archive random library
+libAsihttp.a (for architecture i386):	current ar archive random library
+</PRE>
+</OL>
+
+<HR>
+
+<A name="Using"></A><H2>Using the Static Library in a Pascal App</H2>
+
+<OL>
+<LI>Add the Pascal interface unit (Asihttp) to your app's uses. If the 
+unit's compiled files (Asihttp.o / Asihttp.ppu) are not where FPC can find them,
+add to the compiler's unit search path using the <B>-Fu</B> switch.<P>
+
+<B><I>Tip:</I></B> Depending on how your app's Xcode project is set up, you
+can add switches either to its build script or, if the script uses them,
+to user-defined settings on the project target's Build Settings tab.<P>
+
+<LI>Use the FPC <B>-Fo</B> switch to add the path to the library 
+(libAsihttp.a) to the compiler's object search path.<P>
+
+<LI>Test the library. For example, you can test the ASIHTTPRequest class
+with this simple code:<P>
+<PRE>
+var
+  url     : NSURL;
+  request : ASIHTTPRequest;
+  error   : NSError;
+begin
+  url := NSURL.URLWithString(NSSTR('http://jaiku.com/feed/json'));
+  request := ASIHTTPRequest.requestWithURL(url);
+  request.startSynchronous;
+  error := request.error_;
+  if not Assigned(error) then
+    NSLog(request.responseString);  //output JSON to console
+</PRE>
+
+</OL>
+
+<HR>
+Copyright 2011 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted Nov. 9, 2011; last edited May 9, 2013.
+<P>
+
+</BODY>
+
+</HTML>

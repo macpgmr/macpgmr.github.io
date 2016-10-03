@@ -1,0 +1,375 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2011 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 4: iOS Devices and Xcode 4</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 4: iOS Devices and Xcode 4</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Requirements">Requirements</A><BR>
+<!--<A HREF="#BuildingCompilerArm">Building the Free Pascal cross-compiler for ARM iOS devices</A><BR>-->
+<A HREF="#CompilingHeaders">Compiling Pascal iOS headers for ARM</A><BR>
+<A HREF="#ProvisioningProfile">Obtaining a provisioning profile for your app</A><BR>
+<A HREF="#RunningApp">Running your app on an iOS device</A><BR>
+<A HREF="#BuildLog">Reviewing the build log</A><BR>
+<A HREF="#NextSteps">Next steps</A><BR>
+<P>
+
+<HR>
+
+<A name="Introduction"></A><H2>Introduction</H2>
+
+These notes describe how to compile an Objective Pascal Cocoa Touch app with
+the Free Pascal ARM cross-compiler and run the app on an actual iOS device. 
+You should already have installed Xcode 4 and reviewed
+<A HREF="ObjP_Part1.html">Part 1</A>, <A HREF="ObjP_Part2.html">Part 2</A>
+and  <A HREF="ObjP_Part3.html">Part 3</A>.<P>
+
+<HR>
+
+<A name="Requirements"></A><H2>Requirements</H2>
+
+<UL>
+<LI>See Part 3 for basic requirements.<P>
+<LI>Free Pascal cross-compiler version 2.6.2 for iOS ARM devices. An installer
+is available here: <A HREF="ftp://freepascal.stack.nl/pub/fpc/dist/2.6.2/i386-macosx/">ftp://freepascal.stack.nl/pub/fpc/dist/2.6.2/i386-macosx/</A>.<P>
+<LI>Compiled Pascal iOS headers. See next section.<P>
+<LI>Provisioning profile from Apple for your app. See section below.<P>
+</UL>
+
+<!--<HR>
+
+<A name="BuildingCompilerArm"></A><H2>Building the Free Pascal cross-compiler for ARM iOS devices</H2>
+
+<OL>
+<LI>You need to parse one additional header file (_struct.h) from the iOS SDK. 
+The resulting Pascal file is needed to compile the Pascal runtime library for 
+ARM. Jonas Maebe has provided a script to do this.<P>
+
+In TextWrangler or other text editor, copy and paste the following lines, then 
+save the file with a .sh extension (for example, make_sig_cpu.sh). If you 
+checked out the FPC source to a different location, edit the first line.<P>
+
+<B><I>Important!</I></B> The four lines that start with /usr/bin/gcc must
+be on a single line in your script. The line is split up here into four lines 
+for readability.<P>
+<PRE>
+FPCSOURCEDIR=/Developer/ObjectivePascal/fpc
+IPHONESDKDIR=iPhoneOS4.3.sdk
+IPHONEPLATFORMBASEDIR=/Developer/Platforms/iPhoneOS.platform/Developer"
+INCLUDEDIR="$IPHONEPLATFORMBASEDIR"/"SDKs/$IPHONESDKDIR/usr/include"
+STRUCTSHEADER="$INCLUDEDIR"/arm/_structs.h
+
+/usr/bin/gcc -I"$INCLUDEDIR" -E -D__need_mcontext_t -D__DARWIN_UNIX03 "$STRUCTSHEADER" | 
+  sed -e 's/__uint32_t/cuint32/g' -e 's/_STRUCT_ARM_EXCEPTION_STATE/__darwin_arm_exception_state/' 
+  -e 's/_STRUCT_ARM_THREAD_STATE/__darwin_arm_thread_state/' -e 's/_STRUCT_ARM_VFP_STATE/__darwin_arm_vfp_state/' 
+  -e 's/__darwin_mcontext/mcontext_t/' > "$FPCSOURCEDIR"/rtl/darwin/arm/sig_cpu.h
+
+/usr/local/bin/h2pas -i -o "$FPCSOURCEDIR"/rtl/darwin/arm/sig_cpu.inc "$FPCSOURCEDIR"/rtl/darwin/arm/sig_cpu.h
+</PRE>
+
+<LI>Run the parser script.<P>
+
+First set the script to be executable:
+<PRE>
+chmod +x make_sig_cpu.sh
+</PRE>
+
+Then run it.
+<PRE>
+./make_sig_cpu.sh
+</PRE>
+
+This will create a small file, sig_cpu.inc. With the FPC checkout folder 
+assumed above, the file will be created here:<P>
+<PRE>
+/Developer/ObjectivePascal/fpc/rtl/darwin/arm
+</PRE>
+
+<LI><B><I>Important!</I></B> Skip this step if you checked out
+your Free Pascal source on Aug. 2, 2011 or later. If you've updated a
+previously patched source, just delete the t_bsd.pas file mentioned below
+and update again, then proceed to step 4.<P>
+
+If you are compiling Free Pascal source checked out or updated prior to
+Aug. 2, 2011, you also need to add one line to an FPC source file. This patch 
+is needed because of a change in the Xcode 4 linker.<P>
+
+Locate and open this file in TextWrangler or other text editor (substitute
+your checkout folder if necessary):<P>
+
+<PRE>
+/Developer/ObjectivePascal/fpc/compiler/systems/t_bsd.pas
+</PRE>
+
+Locate this line and comment it out:<P>
+
+<PRE>
+LinkRes.Add('arm');
+</PRE>
+
+And insert this line below it:<P>
+
+<PRE>
+LinkRes.Add(lower(cputypestr[current_settings.cputype]));
+</PRE>
+
+<LI>Create the build script. In TextWrangler or other text editor, copy and 
+paste the following lines, then save the file with a .sh extension (for example, 
+make_arm.sh). If you checked out to a different location, edit the first line.<P>
+
+Again, for readability, the last two lines have been split into two lines
+here, but must not be split in your script file.<P>
+
+<PRE>
+cd /Developer/ObjectivePascal/fpc
+export IPHONEPLATFORMBASEDIR=/Developer/Platforms/iPhoneOS.platform/Developer
+make FPC=/usr/local/lib/fpc/2.4.4/ppc386 CPU_TARGET=arm CROSSOPT="-FD${IPHONEPLATFORMBASEDIR}/usr/bin 
+  -XR${IPHONEPLATFORMBASEDIR}/SDKs/iPhoneOS4.3.sdk/ -ap -Cfvfpv2" all
+sudo make FPC=`pwd`/compiler/ppcrossarm OPT="-ap" CPU_TARGET=arm CROSSOPT="-FD${IPHONEPLATFORMBASEDIR}/usr/bin 
+  -XR${IPHONEPLATFORMBASEDIR}/SDKs/iPhoneOS4.3.sdk/ -ap" install CROSSINSTALL=1
+</PRE>
+
+<LI>Run the build script.<P>
+
+First set the script to be executable:
+<PRE>
+chmod +x make_arm.sh
+</PRE>
+
+Then run it, entering your password when prompted. The password is needed 
+because we'll be installing the compiler in a place (/usr) that's normally 
+read-only.
+<PRE>
+sudo ./make_arm.sh
+</PRE>
+
+This script will take a few minutes to complete since you're building not only
+the compiler but also compiling the runtime units (SysUtils, Classes, etc.)
+and CoreFoundation units (CFString, etc.). When complete, the compiler (ppcrossarm) 
+will be installed in /usr/local/lib/fpc/2.5.1 and the compiled units will be 
+installed in /usr/local/lib/fpc/2.5.1/units/arm-darwin.
+To browse these files in Finder, choose Go | Go to Folder and enter /usr .<P>
+
+<LI>Test the compiler.<P>
+Copy and paste this to a Terminal command line to display the compiler's date,
+version and target OS and processor:<P>
+<PRE>
+/usr/local/lib/fpc/2.5.1/ppcrossarm -iDVTOTP
+</PRE>
+</OL>
+
+-->
+<HR>
+
+<A name="CompilingHeaders"></A><H2>Compiling Pascal iOS headers for ARM</H2>
+
+In Part 3, you parsed the iOS headers to create the source for the iPhoneAll
+unit and compiled the unit for use with the iOS Simulator compiler. Now you need 
+to compile it for use with the ARM cross-compiler.<P>
+
+<OL>
+<LI>Change to the folder where the iPhoneAll source files are located. 
+For example:<P>
+<PRE>
+cd /Developer/ObjectivePascal/utils/uikit-skel/src
+</PRE>
+
+<LI>Now compile the iPhoneAll unit:<P>
+
+<PRE>
+./compile-arm.sh iPhoneAll
+</PRE>
+
+Using the script included with the header parser ensures that the compiled
+object (.o) files contain both armv6 and armv7 code.<P>
+
+<LI>Copy the compiled files to where your project will look for them.<P>
+
+The Cocoa Touch template assumes that the compiled iPhoneAll files for 
+ARM are in the following location, although you can place them wherever you want 
+and just edit the path in your project settings:<P>
+<PRE>
+/Developer/ObjectivePascal/units/arm-darwin
+</PRE>
+
+Here are the files you need to copy:<P>
+<PRE>
+iPhoneAll.o
+iPhoneAll.ppu
+AnonClassDefinitionsUikit.o
+AnonClassDefinitionsUikit.ppu
+</PRE>
+</OL>
+
+<HR>
+
+<A name="ProvisioningProfile"></A><H2>Obtaining a provisioning profile for your app</H2>
+
+Creating a provisioning profile may seem confusing at first, but all you're 
+doing is tying together three things: a developer, a device and an app. 
+Requiring a provisioning profile helps protect the user from malware and helps 
+protect you from getting ripped off by software pirates.<P>
+
+<B><I>Tip:</I></B> The following steps describe how to <I>manually</I> create
+and download a profile. For many apps you can also let Xcode do <I>automatic</I>
+provisioning. For more information, see 
+<A HREF="http://developer.apple.com/library/mac/#documentation/ToolsLanguages/Conceptual/Xcode4UserGuide/Devices/Devices.html">Apple's docs</A>.<P>
+
+<OL>
+<LI>Log into the iOS Dev Center. Note you must be a iOS Dev Center member
+to log in.<P>
+
+<PRE>
+<A HREF="http://developer.apple.com/devcenter/ios/index.action">http://developer.apple.com/devcenter/ios/index.action</A>
+</PRE>
+
+<LI>Click the iOS Provisioning Portal link.<P>
+
+<LI>If you haven't done this previously for yourself, obtain an iOS Development 
+Certificate.<P>
+
+<LI>If you haven't done this previously for your iOS device, obtain a Device ID.<P>
+
+<LI>Create an App ID for your app.<P>
+
+<UL>
+<LI>For the Description, enter the name of your Cocoa Touch project. For example, 
+with the Part 3 example project, enter <B>Test3</B>.<P>
+
+<LI>For the Bundle Identifier, just open your project in Xcode and look in your
+project-Info.plist file to see what to use for the first part of the identifier. 
+For example, if it starts with "com.mycompany", enter <B>com.mycompany.Test3</B>
+as the Bundle Identifier.<P>
+<LI>Click Submit.<P>
+</UL>
+
+<LI>Create a new Provisioning Profile.<P>
+<UL>
+<LI>For Profile Name, enter a name for the profile, for example <B>ObjP_Test3</B>.<P>
+<LI>For Certificates, check your name.<P>
+<LI>For App ID, select the App ID you created in the previous step.<P>
+<LI>For Devices, check your device that you want to run the app on.<P>
+<LI>Click Submit.<P>
+</UL>
+
+<LI>Download the provisioning profile.<P>
+
+<UL>
+<LI>On the Provisioning page, you'll see your new profile listed, followed by 
+"Pending". After a minute or two, the status will change to "Active".<P>
+<LI>Click Download. This will download your provision's file, for example
+<B>ObjP_Test3.mobileprovision</B>.<P>
+</UL>
+
+<LI>You can now log out of the iOS Dev Center.<P>
+</OL>
+
+<HR>
+
+<A name="RunningApp"></A><H2>Running your app on an iOS device</H2>
+
+<OL>
+<LI>Open your project in Xcode.<P>
+<LI>If you manually created a profile, drag and drop the downloaded provision 
+file onto Xcode's icon on the Dock. 
+This will bring up Xcode's Organizer, where you should see the provisioning 
+profile listed.<P>
+<LI>In Xcode, check the ARCHS setting on the target's Build Settings tab 
+to make sure you're compiling for the desired architecture(s). By default
+the template sets ARCHS to <B>armv6</B>. If you're targeting iOS 5 or later, 
+change ARCHS to <B>armv7</B> since all devices running iOS 5 can run armv7 code. 
+You can also set ARCHS to <B>armv7 armv6</B> to include code for both 
+architectures in the same "universal" binary.<P>
+<LI>Connect your iOS device to your Mac and unlock it by entering the 
+device's access code.<P>
+<LI>In Xcode, select your device from the Scheme list, then choose 
+Product | Build to make sure Xcode can compile your app with the FPC ARM 
+cross-compiler.<P>
+Note: If you only see the generic iOS Device in the Scheme list, this probably 
+means there's a mismatch somewhere. For example, make sure your device's version 
+of iOS is equal to or greater than your project's deployment target.<P>
+<LI>Choose Product | Clean, then Product | Run. Xcode will now build and 
+copy the app to your device and run it. The screenshot below shows what
+it should look like on an iPhone or iPod touch.<P>
+</OL>
+
+&nbsp;&nbsp;&nbsp;Figure 4-1. Screenshot of Part 3's example app on an iPod touch.<P>
+<IMG src="ObjP_Part4-1.png" hspace="10" border="1" /><P>
+
+<HR>
+
+<A name="BuildLog"></A><H2>Reviewing the build log</H2>
+
+This illustration shows a typical build log for the example app
+given in Part 3. Discussion follows below.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 4-2. The Xcode 4 build log for an Objective
+Pascal iOS app.<P>
+<IMG src="ObjP_Part4-2.jpg" hspace="10" border="1" /><P>
+
+Here are some notes about several of the build steps shown in the log.<P>
+
+<UL>
+<LI>Since the four placeholder ObjC files are listed in the target's 
+Compile Sources build phase, they still get compiled and linked.<P>
+
+<LI>Generating Test3.app.dSYM - creates a package containing the executable's
+DWARF debug information; located just above the app bundle.<P>
+
+<LI>Compiling MainWindow_iPhone.xib and MainWindow_iPad.xib - creates
+MainWindow_iPhone.nib and MainWindow_iPad.nib and copies them to the 
+app bundle.<P>
+
+<LI>Run custom shell script 'Run Script' - launches Free Pascal compiler, 
+which compiles, assembles and links your Pascal code, creating the executable
+file in the app bundle, overwriting the ObjC executable. Since the script also 
+echoes the compiler command line, you can see exactly what switches were passed 
+to the compiler (click "more" at the right to expand the output).<P>
+
+Note that even though the app is compiled against the iOS 5.0 SDK, the 
+Deployment Target was set to 4.2 in Xcode, resulting in the -ios_version_min
+linker switch set to 4.2.<P>
+
+<LI>Creating Test3.app.dSYM - overwrites the ObjC executable's debug info with 
+debug info from the Pascal executable. FPC can create this package with the -Xg
+switch, but not with the expected name or in the expected location, so the Run 
+Script uses the dsymutil command to create it.<P>
+Note that we've compiled only for armv6 (as indicated in the previous
+line).<P>
+</UL>
+
+<HR>
+
+<A name="NextSteps"></A><H2>Next steps</H2>
+
+These four articles introduced quite a bit of material for two different 
+platforms (OS X and iOS) and three Pascal compilers (ppc386, ppcx64, ppcarm). 
+There's still a lot more to cover, but that's for future installments.<P>
+
+<HR>
+Copyright 2011 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted May 1, 2011; last edited Feb. 25, 2013.
+<P>
+
+</BODY>
+
+</HTML>

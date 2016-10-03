@@ -1,0 +1,295 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2011 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 7: Adding Views to an iOS App</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 7: Adding Views to an iOS App</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Requirements">Requirements</A><BR>
+<A HREF="#Creating the App">Creating the App</A><BR>
+<A HREF="#User Interface - Main View">User Interface - Main View</A><BR>
+<A HREF="#User Interface - Secondary View">User Interface - Secondary View</A><BR>
+<A HREF="#The Controller Layer">The Controller Layer</A><BR>
+<A HREF="#Running the App">Running the App</A><BR>
+<A HREF="#Other Considerations">Other Considerations</A><BR>
+<P>
+
+<HR>
+
+<A name="Introduction"></A><H2>Introduction</H2>
+
+These notes describe how to build a simple iOS app with two views: a main
+view where the user selects from a list of items and a secondary view where
+the user edits the selected item's data. The provided example app is a simple 
+file viewer and editor that touches on a variety of technologies, including the 
+following:<P>
+
+<UL>
+<LI><A HREF="http://developer.apple.com/library/ios/#documentation/UIKit/Reference/UINavigationController_Class/Reference/Reference.html#//apple_ref/doc/uid/TP40006934">UINavigationController</A>
+<LI><A HREF="http://developer.apple.com/library/ios/#documentation/UIKit/Reference/UITableView_Class/Reference/Reference.html#//apple_ref/doc/uid/TP40006943">UITableView</A>
+<LI>Xcode 4 file templates for Objective Pascal that add a
+<A HREF="http://developer.apple.com/library/ios/#documentation/UIKit/Reference/UIViewController_Class/Reference/Reference.html#//apple_ref/doc/uid/TP40006926">UIViewController</A>
+subclass and associated .xib file to a project.
+</UL>
+
+<HR>
+
+<A name="Requirements"></A><H2>Requirements</H2>
+
+<UL>
+<LI>See Part 3 if you'll be developing for the iOS Simulator.<P>
+<LI>See Part 4 if you'll be developing for an iOS device.<P>
+<LI>See Part 5 for several files that will also be used in this article's 
+example app.<P>
+</UL>
+
+<HR>
+
+<A name="Creating the App"></A><H2>Creating the App</H2>
+
+The example app presented in Part 5 is also a simple file viewer and editor,
+but it lacks the ability to see a list of all files that can be edited and
+does not look much like a conventional iOS app. This article's example app
+will correct those deficiencies, while recycling much of the code from Part 5.<P>
+
+For this article's example app, start by creating a new app in Xcode 4 using the 
+Objective Pascal project template for a Window-Based Application, then enter
+the following:<P>
+
+<UL>
+<LI>Product Name - enter <B>Test5</B>.<P>
+<LI>App Delegate Class - enter <B>Test5AppDelegate</B>.<P>
+<LI>Device Family - select <B>iPhone</B>.<P>
+</UL>
+
+Now click Next and save it as a project named <B>Test5</B>.<P>
+
+Now open <B>Test5-Info.plist</B> in Xcode and add the keys described in 
+Part 5. If you've completed Part 5, you can just copy Test4-Info.plist into
+the Test5 source folder and rename it to Test5-Info.plist.<P>
+
+The "model" code will also be the same as the Test4 example app, so download 
+the <A HREF="MyDocument.pas">MyDocument.pas</A> file and place it in the 
+Test5 source folder. Do the same with the 
+<A HREF="NSHelpers.pas">NSHelpers.pas</A> file.<P>
+
+<HR>
+
+<A name="User Interface - Main View"></A><H2>User Interface - Main View</H2>
+
+This example app splits the Test4 single-view user interface into two views.
+The main view consists of two parts:<P>
+
+<UL>
+<LI>UINavigationController - this adds the familiar navigation bar at the
+top of the window and a view controller where other controls can be placed.
+The navigation controller is also used to "push" and "pop" other view
+controllers on the navigation stack. If you're unfamiliar with this concept, 
+review <A HREF="http://developer.apple.com/library/ios/#documentation/UIKit/Reference/UINavigationController_Class/Reference/Reference.html#//apple_ref/doc/uid/TP40006934">Apple's docs</A>.<P>
+<LI>UITableView - this will be used to display files in a list and allows
+the user to scroll through the list and select a file. The UITableView 
+replaces the UISegmentedControl used in Test4.
+</UL>
+
+Add controls to the window until your layout looks like the figure below.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 7-1. Main view's layout (with placeholder table data).<P>
+<IMG src="ObjP_Part7-1.jpg" hspace="10" align="left" /><P>
+Add a <B>Navigation Controller</B> to the layout.<P>
+- Drag the window's rootViewController outlet to the Navigation Controller 
+(orange and gray circle).<P>
+- Change the Navigation Item's Title to "Test 5".<P>
+- Change the Navigation Item's Back Button to "Back".<P>
+- Drag the Navigation Controller's New Referencing Outlet to Test5AppDelegate.h
+and name it navigationController.<P>
+- Declare it in the Test5AppDelegate class in Test5AppDelegateU.pas too: 
+navigationController : UINavigationController;<P>
+Drop a <B>Table View</B> onto the Navigation Controller.<P>
+- Drag the Table View's dataSource and delegate outlets to the app delegate
+(solid yellow cube).<P>
+- Drag the Table View's New Referencing Outlet to Test5AppDelegate.h
+and name it tableView.<P>
+- Declare it in the Test5AppDelegate class in Test5AppDelegateU.pas too: 
+tableView : UITableView;<P>
+<BR clear="all"><P>
+
+<HR>
+
+<A name="User Interface - Secondary View"></A><H2>User Interface - Secondary View</H2>
+
+The second part of the user interface consists of a custom view controller
+whose view contains a simple text editing control.<P>
+
+Choose File | New | New File. Under iOS you should see Objective Pascal  
+(if not, you probably don't have the templates installed in the correct 
+location). Click Objective Pascal and select the <B>View controller 
+subclass</B> template, then click Next and enter the following:<P>
+
+<UL>
+<LI>Subclass of - select <B>UIViewController</B>.<P>
+<LI>Targeted for iPad - for this example, uncheck the box.<P>
+<LI>With XIB for user interface - check the box.<P>
+</UL>
+
+Now click Next and enter <B>Test5ViewController</B> in the Save As box.
+Make sure you're in the Test5 source folder and Test5 group, then click
+Save. This will add four files to your project. The Project navigator
+should look something like this:<P>
+
+&nbsp;&nbsp;&nbsp;Figure 7-2. The project with two views.<P>
+<IMG src="ObjP_Part7-2.jpg" hspace="10" border="1" /><P>
+
+Now correct two little problems with Xcode file templates:<P>
+
+<UL>
+<LI>Remove Test5ViewControllerU.pas from Compile Sources under Build Phases.<P>
+<LI>Move Test5ViewController.xib from the Test5 source folder to its
+en.lproj subfolder where MainWindow.xib is. (Delete the file's reference in the
+project, move the file, then add it back to the project.)<P>
+</UL>
+
+Now add to the view controller's view so it looks like the figure below.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 7-3. Secondary view's layout.<P>
+<IMG src="ObjP_Part7-3.jpg" hspace="10" align="left" /><P>
+Add a UITextField to the view.<P>
+- Increase font size to 17.<P>
+- Create an outlet named textFieldMyData in Test5ViewController.h.<P>
+- Declare it in the Test5ViewController class in Test5ViewControllerU.pas too: 
+textFieldMyData : UITextField;<P>
+- Set File's Owner to be its delegate (hint: drag the UITextField's delegate 
+outlet to the yellow cube). 
+<BR clear="all"><P>
+
+<HR>
+
+<A name="The Controller Layer"></A><H2>The Controller Layer</H2>
+
+Just as the user interface consists of two .xib files, the app's controller
+layer consists of two classes, Test5AppDelegate and Test5ViewController.
+Basically this is the Test4AppDelegate code split into two classes.<P>
+
+Download the <A HREF="Test5AppDelegateU.pas">Test5AppDelegateU.pas</A> and
+<A HREF="Test5ViewControllerU.pas">Test5ViewControllerU.pas</A> source files
+for the two classes and drop them in your Test5 source folder, replacing the
+two stub files with those names. Then look at the code.<P>
+
+The Test5AppDelegate class has much of the same startup code discussed in 
+Part 5. What's missing is the actual text editing support code. And what's 
+been added are methods that populate the table view and respond to a table row
+selection:<P>
+
+<UL>
+<LI>tableView_numberOfRowsInSection - this function just returns the number
+of files found at startup. That means there will be one row in the table for
+each file.<P>
+<LI>tableView_cellForRowAtIndexPath - whenever the table view needs a cell
+for a row it calls this function, which returns a cell with its label set
+to the name of the row's corresponding file.<P>
+<LI>tableView_didSelectRowAtIndexPath - whenever the user selects a row in
+the table, the table view calls this method, which pushes the edit view
+controller onto the navigation stack, displaying it.<P>
+</UL>
+
+The Test5ViewController class contains the code for loading and saving a 
+document file and transferring its data to and from the view's edit control.<P>
+
+<UL>
+<LI>viewWillAppear - this method loads the file and transfers its data to the
+edit control.<P>
+<LI>viewWillDisappear - this method ensures that any edit changes have been 
+saved to the file.<P>
+</UL>
+
+A few points about the app's controller layer are worth mentioning:<P>
+
+<OL>
+<LI>The Test5AppDelegate class handles the list of files; the Test5ViewController
+class handles loading, editing and saving the selected file.<P>
+<LI>The Test5ViewController class has no dependency on the Test5AppDelegate 
+class and could be used in virtually any app; the Test5AppDelegate class does 
+have a dependency on the Test5ViewController class since it creates the view
+controller object and pushes it onto the navigation stack, but its knowledge 
+of what the object does is minimal.<P>
+<LI>The Test5ViewController class has two methods that the app delegate can use 
+to communicate with it:<P>
+  <UL>
+  <LI>setDocFile - before pushing the view controller object onto the navigation 
+  stack, the app delegate calls this method so the object know what file to 
+  load.
+  <LI>saveChanges - the app delegate calls this method to ensure edit changes
+  have been saved.
+  </UL><P>
+<LI>At startup, the app delegate creates the Test5ViewController object. 
+In some ways this is similar to the way Delphi and Lazarus create "global" forms
+at startup. Note that the controller's nib file is not loaded until the 
+object is actually used.
+</OL>
+
+<HR>
+<A name="Running the App"></A><H2>Running the App</H2>
+
+Build the app for the Simulator or an iOS device. Copy one or more 
+<B>.mydoc1</B> files into the Documents directory of where the app is installed 
+in the Simulator or via iTunes to the app's Documents directory on the device 
+(see Part 5). Then run the app. It should look something like the figures 
+below:<P>
+
+&nbsp;&nbsp;&nbsp;Figures 7-4 and 7-5. The finished app's main and secondary 
+views.<P>
+<IMG src="ObjP_Part7-4.png" hspace="10" align="left" border="1" /><P>
+<IMG src="ObjP_Part7-5.png" hspace="10" border="1" />
+<BR clear="all"><P>
+
+<HR>
+<A name="Other Considerations"></A><H2>Other Considerations</H2>
+
+At its simplest, you create a multi-view app by adding a navigation controller
+and creating a custom view controller using one of the new file templates, 
+then adding code to the app delegate class that creates the view controller 
+object and pushes the object onto the navigation stack in response to some
+user action. Other enhancements to this basic pattern are possible, 
+including:<P>
+
+<UL>
+<LI>iPad user interface.<P>
+<LI>Universal app with both iPhone and iPad user interfaces.<P>
+<LI>Using a tab bar controller. This adds a tab bar at the bottom of the 
+window and can be used with multiple navigation controllers.<P>
+<LI>Responding to device orientation changes. See the Test5ViewController 
+class's shouldAutorotateToInterfaceOrientation method.<P>
+<LI>Communicating between views via notifications, for example whenever
+there are data changes in some object.<P>
+<LI>The example app only saves the name of the last-edited file to the app's
+Preferences. At startup it selects this file, but does not open it. It could 
+also save which view was on top and then proceed to open the file if the 
+edit view controller was on top when the app was shut down.<P>
+</UL>
+
+<HR>
+Copyright 2011 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted Aug. 21, 2011; last edited Dec. 30, 2011.
+<P>
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,436 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2011 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 9: Parsing Objective C Header Files</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 9: Parsing Objective C Header Files</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Include">The Main Include File</A><BR>
+<A HREF="#Config">The Parser Config File</A><BR>
+<A HREF="#Parsing">Running the Parser</A><BR>
+<A HREF="#Unit">The Interface Unit</A><BR>
+<A HREF="#Patch">Creating a Patch File</A><BR>
+<P>
+
+<HR>
+
+<A name="Introduction"></A><H2>Introduction</H2>
+
+You can use Objective C classes in your Pascal app if you have a unit of 
+Objective Pascal declarations that are equivalent to the ObjC 
+header file declarations. Except for very simple ObjC classes, you'll want 
+to use FPC's header file parser to assist in creating this Pascal interface
+unit. The latest version of the parser can be obtained from here:<P>
+
+<A HREF="iOS_6_Parsing_Status.html">iOS_6_Parsing_Status.html</A><P>
+
+The parser includes the parser input files and interface unit for the 
+ASIHTTPRequest classes, so we'll use those files as examples and go over
+each file in some depth. The ASIHTTPRequest classes and header files 
+to parse are available here:<P>
+
+<A HREF="http://allseeing-i.com/ASIHTTPRequest/">http://allseeing-i.com/ASIHTTPRequest</A>
+
+<HR>
+
+<A name="Include"></A><H2>The Main Include File</H2>
+
+This is a Pascal include file (.inc) that serves both as a list of header files
+to parse and a list of nested include files, one per header file, that will be
+"included" in the interface unit.<P>
+
+The ASIHTTPRequest include file is <B>Asihttp.inc</B> and can be found in the 
+parser's <B>/uikit-skel/src/asihttp</B> folder. You can create your own include 
+file wherever you want and point the parser to it, as described below.<P>
+
+Here's what Asihttp.inc looks like:<P>
+
+<PRE>
+{$include ASIHTTPRequest.inc}
+{$include ASIHTTPRequestDelegate.inc}
+{$include ASIProgressDelegate.inc}
+{$include ASICacheDelegate.inc}
+{$include ASIFormDataRequest.inc}
+{$include ASINetworkQueue.inc}
+{$include ASIDownloadCache.inc}
+{$include ASIInputStream.inc}
+{$include ASIDataDecompressor.inc}
+{$include ASIDataCompressor.inc}
+{$include ASIAuthenticationDialog.inc}
+</PRE>
+
+To save yourself some typing, you can open a Terminal window, change to where
+the header files are, and use the <B>ls</B> command with the <B>-1</B> switch 
+(numeric digit "one") to list the header files in a single column. You can then 
+copy and paste this list into your .inc file, add <B>{$include</B> to each 
+line, and change the file extensions from .h to <B>.inc}</B>. For example:<P>
+
+<PRE>
+ls -1 *.h
+ASIAuthenticationDialog.h
+ASICacheDelegate.h
+ASIDataCompressor.h
+ASIDataDecompressor.h
+ASIDownloadCache.h
+ASIFormDataRequest.h
+ASIHTTPRequest.h
+ASIHTTPRequestConfig.h
+ASIHTTPRequestDelegate.h
+ASIInputStream.h
+ASINetworkQueue.h
+ASIProgressDelegate.h
+</PRE>
+
+This list will be in alphabetical order and you can start out keeping the
+.inc files in that order too, although you may need to change the order later 
+if you have classes that reference other classes.<P>
+
+Note that there's no include file for ASIHTTPRequestConfig.h - this
+file does not have anything we need, so we've left it out. Some 
+frameworks or classes will have a small .h file that just includes all the
+other .h files - you can leave out that file as well.<P>
+
+<HR>
+
+<A name="Config"></A><H2>The Parser Config File</H2>
+
+The other parser input file that you'll need to create is a small XML
+configuration file. This file has the same format as the parser's 
+<B>frameworks.xml</B> file that defines the iOS and OS X system frameworks
+for the parser. Here's a blank template that you can use:<P>
+
+<PRE>
+&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+&lt;frameworks&gt;
+  &lt;framework&gt;
+    &lt;name&gt;&lt;/name&gt;
+    &lt;root&gt;&lt;/root&gt;
+    &lt;headers&gt;&lt;/headers&gt;
+    &lt;include_pattern&gt;&lt;/include_pattern&gt;
+    &lt;header_pattern&gt;&lt;/header_pattern&gt;
+    &lt;external_macro&gt;&lt;/external_macro&gt;
+    &lt;ignore_lines&gt;
+    &lt;/ignore_lines&gt;
+    &lt;ignore_types&gt;&lt;/ignore_types&gt;
+    &lt;ignore_methods&gt;&lt;/ignore_methods&gt;
+    &lt;replace_types&gt;
+    &lt;/replace_types&gt;
+  &lt;/framework&gt;
+&lt;/frameworks&gt;
+</PRE>
+
+Note that even though we're defining these classes like a framework, they
+don't have to be in a framework. Actually, a framework is just a versioned
+library in a bundle (folder) with a .framework extension that contains the 
+compiled library, headers and other files. From the point of view of the 
+parser, there isn't much difference.<P>
+
+Here's the filled-in <B>asihttp.xml</B> file, with unused elements
+deleted (consult frameworks.xml for examples of how those elements are
+used):<P>
+
+<PRE>
+&lt;?xml version="1.0" encoding="UTF-8" ?&gt;
+&lt;frameworks&gt;
+  &lt;framework&gt;
+    &lt;name&gt;<B>asihttp</B>&lt;/name&gt;
+    &lt;root&gt;<B>/asihttp/Asihttp.inc</B>&lt;/root&gt;
+    &lt;!-- Change the following path if ASI header files (.h) are located elsewhere --&gt; 
+    &lt;headers&gt;<B>/Users/Shared/asi-http-request/Classes</B>&lt;/headers&gt;
+    &lt;include_pattern&gt;<B>{[$]+include (.*).inc}</B>&lt;/include_pattern&gt;
+    &lt;header_pattern&gt;<B>^(.*)\.h</B>&lt;/header_pattern&gt;
+    &lt;external_macro&gt;<B>extern</B>&lt;/external_macro&gt;
+  &lt;/framework&gt;
+&lt;/frameworks&gt;
+</PRE>
+
+It may still not be obvious what these elements should contain, so here's a 
+brief explanation of each one:<P>
+<UL>
+ <LI>name - you'll specify the framework or set of classes on the parser
+ command line using this name.
+ <LI>root - this is the path to the main include file relative to the 
+ path specified on the parser command line.
+ <LI>headers - this is the path to the header files.
+ <LI>include_pattern - this is a regular expression that tells the parser
+ what to look for in the include file. You can use the example in most
+ cases.
+ <LI>header_pattern - this is a regular expression that tells the parser
+ what header files to look for. You can use the example in most cases.
+ <LI>external_macro - some frameworks use special macros to indicate external
+ references (for example, UIKIT_EXTERN), but most header files
+ use <B>extern</B>. Knowing the macro allows the parser to skip it, 
+ simplifying parsing.
+</UL>
+
+<HR>
+
+<A name="Parsing"></A><H2>Running the Parser</H2>
+
+To see a list of parser switches, run the parser without any switches:<P>
+
+<PRE>
+  php parser.php
+</PRE>
+
+Here's the command line for parsing the ASIHTTPRequest headers using the
+two files described above. Enter this all on one line:<P>
+
+<PRE>
+  php parser.php -all -frameworks=^foundation,^uikit,asihttp -aux_config=asihttp.xml -root=`pwd`/uikit-skel/src
+    -framework_path=/Developer/Platforms/iPhoneOS.Platform/Developer/SDKs/iPhoneOS5.0.sdk/System/Library/Frameworks
+</PRE>
+
+Since this is quite a bit to type, it makes sense to put it in a script.
+See the <B>parse-ios.sh</B> script for examples of how to do this.<P>
+
+Here are the switches used:<P>
+
+<UL>
+ <LI>-frameworks -- this switch specifies the entry to parse (asihttp), as well 
+ as any frameworks it depends on (foundation, uikit). The dependent frameworks
+ can be specified with a "^" prefix to tell the parser to parse them for 
+ types, but not to create their .inc files. How do you know what frameworks
+ a set of classes depends on? Just use <B>grep</B> on the header files. For 
+ example:
+ <PRE>
+ grep "#import" *.h
+ </PRE>
+ If a header file depends on other frameworks, you'll see lines like this:
+ <PRE>
+ ASIAuthenticationDialog.h:#import &lt;Foundation/Foundation.h&gt;
+ ASIAuthenticationDialog.h:#import &lt;UIKit/UIKit.h&gt;
+ </PRE>
+ <LI>-aux_config -- unless you're parsing a framework defined in frameworks.xml,
+ specify your XML configuration file with this switch.<P>
+ <LI>-root -- the path specified here combined with the root from the 
+ config file forms the complete path to the main include file; the parser will 
+ also create the header .inc files in the same folder as the main include file. 
+ `pwd` indicates the current directory when the script was run.<P>
+ <LI>-framework_path -- this specifies the path to the system frameworks; 
+ change this if you're parsing with a different SDK.
+</UL>
+
+<HR>
+
+<A name="Unit"></A><H2>The Interface Unit</H2>
+
+The easiest way to create the interface unit file is to make a copy of one
+of the interface units included with the parser and modify it. However,
+you may need to do some sleuthing to determine what all needs to go into
+this file, as described below for the sections of the <B>Asihttp.pas</B> file.<P>
+
+<H3>Linking</H3>
+
+<PRE>
+unit Asihttp;
+
+{$mode delphi}
+{$modeswitch objectivec1}
+{$modeswitch cvar}
+{$packrecords c}
+
+interface
+
+{$linkframework CFNetwork}
+{$linkframework SystemConfiguration}
+{$linkframework MobileCoreServices}
+
+{$l libAsihttp.a}  //if have static library, use instead of .o files below}
+
+(*
+{$l ASIAuthenticationDialog.o}
+{$l ASIDataCompressor.o}
+{$l ASIDataDecompressor.o}
+{$l ASIDownloadCache.o}
+{$l ASIFormDataRequest.o}
+{$l ASIHTTPRequest.o}
+{$l ASIInputStream.o}
+{$l ASINetworkQueue.o}
+{$l Reachability.o}
+*)
+
+{$IFDEF CPUARM}
+  {$linklib libgcc_s.1}
+{$ENDIF}
+
+</PRE>
+
+<UL>
+<LI>$linkframework - With a framework unit file, use this directive to link to
+the framework; with a non-framework unit file, use this directive to link to 
+the frameworks that the Objective C classes require. With the ASIHTTPRequest
+classes, the dependencies are listed here:<P>
+
+<A HREF="http://allseeing-i.com/ASIHTTPRequest/Setup-instructions">http://allseeing-i.com/ASIHTTPRequest/Setup-instructions</A><P>
+
+Note that the units included in the uses statement (see below) may also do
+some of the required linking.<P>
+
+<LI>$l - To statically link in the compiled Objective C files, specify a
+static library (see <A HREF="ObjP_Part8.html">Part 8</A>) or the individual 
+object files.<P>
+
+<LI>$linklib - To dynamically link to a library (<B>.dylib</B>), use this
+directive. With an ASIHTTPRequest ObjC ARM executable, <B>otool -L</B> shows
+that it's linked to the <B>libgcc_s.1.dylib</B> system library - without this, 
+you'll get undefined symbols at link-time.<P>
+</UL>
+
+<H3>Uses</H3>
+
+<PRE>
+uses
+  ctypes,
+  CFStream,
+  CGBase,
+  CFHTTPMessage, CFHTTPAuthentication,
+  {SCNetworkReachability,}
+  SecBase,
+  zlib,
+  iPhoneAll,
+  AnonClassDefinitionsAsihttp;
+
+</PRE>
+
+<UL>
+<LI>ctypes - C types.
+<LI>CFStream - Usually you'll need to use one or more CoreFoundation units.
+<LI>CGBase - Ditto with CoreGraphics units.
+<LI>CFHTTPMessage, CFHTTPAuthentication - This is a bit of a cheat in lieu
+of the CFNetwork unit, which does not yet parse and compile. 
+<LI>SCNetworkReachability - Uncomment this if you've parsed and included
+the Reachability.h file (required by ASIHTTPRequest, but not by Pascal).
+<LI>SecBase - security declarations.
+<LI>zlib - The ASIHTTPRequest classes require the system <B>libz.dylib</B>
+system library. Using the FPC zlib unit will also add <B>{$linklib libz}</B>.
+<LI>iPhoneAll - Foundation, UIKit, QuartzCore and OpenGLES frameworks.
+<LI>AnonClassDefinitionsAsihttp - anonymous class declarations for parsed
+frameworks.
+</UL>
+
+<H3>Interface</H3>
+
+The rest of the unit is the interface that your app will see and use. 
+You can define additional types and constants here if necessary
+(see iPhoneAll.pas for better examples).<P>
+
+<PRE>
+{$define INTERFACE}
+
+type
+  BytefPtr = pBytef;  //defined in zlib
+//  sockaddr_inPtr = Pointer;  //only needed for Reachability.inc
+
+{$define HEADER}
+{$include asihttp/Asihttp.inc}
+{$undef HEADER}
+
+{$define TYPES}
+{$include asihttp/Asihttp.inc}
+{$undef TYPES}
+
+{$define RECORDS}
+{$include asihttp/Asihttp.inc}
+{$undef RECORDS}
+
+type
+{$define FORWARD}
+{$include asihttp/Asihttp.inc}
+{$undef FORWARD}
+
+{$define PROTOCOLS}
+{$include asihttp/Asihttp.inc}
+{$undef PROTOCOLS}
+
+{$define CLASSES}
+{$include asihttp/Asihttp.inc}
+{$undef CLASSES}
+ 
+{$define FUNCTIONS}
+{$include asihttp/Asihttp.inc}
+{$undef FUNCTIONS}
+
+{$define EXTERNAL_SYMBOLS}
+{$include asihttp/Asihttp.inc}
+{$undef EXTERNAL_SYMBOLS}
+
+{$define USER_PATCHES}
+{$include asihttp/Asihttp.inc}
+{$undef USER_PATCHES}
+
+{$undef INTERFACE}
+implementation
+{$define IMPLEMENTATION}
+
+{$define USER_PATCHES}
+{$include asihttp/Asihttp.inc}
+{$undef USER_PATCHES}
+
+{$undef IMPLEMENTATION}
+end.
+</PRE>
+
+<HR>
+
+<A name="Patch"></A><H2>Creating a Patch File</H2>
+
+The parser isn't 100% accurate (and might never be), so you may need to edit one 
+or more of the .inc files it creates in order for the interface unit to compile. 
+If you'll never need to parse the header files again, you're done. But what if
+you will parse them again (for example, with an updated parser) or you want to 
+provide your parser input files to someone else? In that case, you'll 
+probably want to create a patch file, if only because it's usually easier than 
+documenting or explaining what edits need to be made.<P>
+
+With the ASIDownloadCache.inc file that the parser creates, one edit needs
+to be made to eliminate a duplicate identifier error when compiling.<P>
+
+<UL>
+<LI>Make a copy of the file you'll be editing (ASIDownloadCache.inc.sav).<P>
+<LI>Edit the original file (add two underscores to to the 
+defaultCachePolicy variable in ASIDownloadCache.inc).<P>
+<LI>From the parser directory, use the <B>diff</B> command to create the patch 
+file. For example, enter this (all on the same line):<P>
+<PRE>
+diff --unified=1 uikit-skel/src/asihttp/ASIDownloadCache.inc.sav 
+ uikit-skel/src/asihttp/ASIDownloadCache.inc >asihttp.patch 
+</PRE>
+
+<LI>Now, the next time you parse the ASIHTTPRequest headers, patch the
+ASIDownloadCache.inc file automatically using the <B>patch</B> command
+with your patch file:<P>
+<PRE>
+patch -p0 < asihttp.patch
+</PRE>
+<LI>Add this command to your parsing script (see parse-ios.sh) and
+include the patch file if you distribute your parser input files.<P>
+</UL>
+
+<HR>
+Copyright 2011 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted Nov. 12, 2011; last edited May 9, 2013.
+<P>
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,511 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2011 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 2: Creating a Document-Based Cocoa App</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 2: Creating a Document-Based Cocoa App</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#YourFirstDocBasedApp">Your first document-based Cocoa app</A><BR>
+<A HREF="#AddingCodeToDoc">Adding code to the document class</A><BR>
+<A HREF="#AddingUI">Adding UI elements and window controller code</A><BR>
+<A HREF="#NextSteps">Next steps</A><BR>
+<P>
+
+<HR>
+
+<A name="Introduction"></A><H2>Introduction</H2>
+These notes describe how to create a document-based Cocoa app using a custom
+Pascal template. You should already have installed Xcode 4, the Free
+Pascal compilers and custom templates described in 
+<A HREF="ObjP_Part1.html">Part 1</A>.<P>
+
+<H3>What is a document-based app?</H3>
+
+Cocoa's document-based architecture solves a common problem: opening and
+managing multiple documents, typically of the same type, with one instance of
+an application. In a document-based app, each open document has its own
+window and you can easily view multiple documents at the same time by moving
+their windows around. On a Mac, you can also manage these windows in conjunction 
+with Spaces if you've activated this feature in System Preferences.<P>
+
+Windows addresses this problem with its multiple document interface (MDI)
+and single document interface (SDI). In MDI there is a single window and
+some way of switching between documents. In SDI each document is
+in a separate window that's activated via the Taskbar and looks almost like
+a separate instance of the app.<P>
+
+Another approach popular on both platforms is to use a tabbed or indexed 
+window to handle multiple documents.<P>
+
+A "document" can contain virtually any kind of data and, when saved to disk,
+can encompass one or multiple files. For example, if you think of a project 
+as being a document, then both Xcode and Dashcode would be considered 
+document-based, although you might lose sight of this when working <I>within</I>
+a project since multiple files in the project folder can be opened at the same 
+time. Delphi and Lazarus would not be considered document-based since they 
+can only open one project at a time.<P>
+
+<H3>How is a document-based app implemented?</H3>
+
+For the purposes of this article, a document-based app is implemented via
+two subclasses that are created by the supplied Pascal project template:<P>
+
+<UL>
+<LI>A subclass of <B>NSDocument</B> that knows how to read and
+write the document files (once you've added your own code to do this, that is), 
+but knows nothing about the app's user interface.<P>
+<LI>A subclass of 
+<B>NSWindowController</B> that manages the window used to display 
+the document's data and serves as the window's delegate; this subclass 
+knows nothing about how the document is stored.<P>
+</UL>
+
+For more information, see Apple's extensive overview of Cocoa's document-based 
+architecture <A HREF="http://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/Documents/Documents.html%23//apple_ref/doc/uid/10000006i">here</A>.<P>
+
+By splitting the "controller layer" into a "model controller" (NSDocument)
+and a "view controller" (NSWindowController), we ensure that the user interface
+doesn't get tangled up with the underlying document and provides a way that
+either subclass can be recycled in other apps with minimal changes.<P>
+
+Note that you can create a document-based Cocoa app by subclassing only
+NSDocument. However, Apple's overview suggests that dividing the 
+responsibilities into two subclasses is the recommended approach "for all but the
+simplest cases." Interestingly, the Objective C template included with Xcode 4
+does not do this, a case where Apple seems to be ignoring its own advice. But
+not to worry: the Pascal template automatically creates both subclasses
+so you don't have to do this manually.<P>
+
+It's also possible to have a third "mediating" controller that sits between
+the model and view controllers, but that's beyond the scope of this article.<P>
+
+<HR>
+
+<A name="YourFirstDocBasedApp"></A><H2>Your first document-based Cocoa app</H2>
+
+Start Xcode and choose File | New | New Project. Under Mac OS X you should see
+Objective Pascal (if not, you probably don't have the templates installed
+in the correct location). Click Objective Pascal and select the Document-Based
+Cocoa Application template, then click Next and enter the following:<P>
+
+<UL>
+<LI>Product Name - enter <B>Test2</B> for this example project.<P>
+
+<LI>Document Class - the will be the name of your NSDocument subclass;
+for this example, enter <B>MyDocument</B>.<P>
+
+<LI>Document Extension - enter the file extension used with your document files;
+files with this extension will be automatically associated with your app
+so you can just double-click one in Finder to open it with your app; for this
+example, just enter <B>mydoc1</B> (don't include a leading dot).<P>
+
+<LI>Window Controller Class - this will be the name of your NSWindowController
+subclass; for this example, enter <B>MyWindowController</B>.<P>
+</UL>
+
+Now click Next and navigate to where you want to save the files that will be 
+created. For example, if you navigate to /Users/yourname/Documents and you 
+entered <B>Test2</B> for your project name, Xcode will create a folder named Test2 
+under Documents. Inside this folder it will create two additional folders, 
+named Test2 (for your app's files) and Test2.xcodeproj (for its project files).<P>
+
+Several of the files that the template creates are the same as in Part 1, 
+but there are some differences, as noted below.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 2-1. A document-based app's files.<P>
+<IMG src="ObjP_Part2-1.jpg" hspace="10" align="left" /><P>
+ReadMe.txt - brief getting-started instructions for the new project.<P>
+
+MainMenu.xib - in Part 1 this file contained both the main menu and the main 
+window; in a document-based app, this file contains only the menu.<P>
+
+MyDocument.xib - since multiple documents can be opened, each in its own
+window, the window layout is now in its own file, which is loaded
+each time a document is opened.<P>
+
+.h / .m files - Objective C placeholder files for creating connections; you
+make a connection by dragging a control's Outlet or Action to the
+MyWindowController.h header file.<P>
+
+Test2.pas - Pascal program file; same as in Part 1.<P>
+
+MyWindowControllerU.pas - Pascal window controller class.<P>
+
+MyDocumentU.pas - Pascal document class.<P>
+
+<BR clear="all"><P>
+
+You can go ahead and compile and run your app (Product | Run), although it 
+doesn't really do anything yet.<P>
+
+<HR>
+
+<A name="AddingCodeToDoc"></A><H2>Adding code to the document class</H2>
+
+Let's start with the document class since the changes we'll make there will
+be all code and no UI. Click on MyDocumentU.pas and look at the code that the
+template created. It should look like the figure below (as viewed in
+TextWrangler).<P>
+
+&nbsp;&nbsp;&nbsp;Figure 2-2. The default Pascal document class.<P>
+<IMG src="ObjP_Part2-2.jpg" hspace="10" /><P>
+
+Our document subclass overrides five NSDocument methods. For more
+information on the NSDocument class, refer to Apple's documentation 
+<A HREF="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/ApplicationKit/Classes/NSDocument_Class/Reference/Reference.html#//apple_ref/doc/uid/TP40004035">here</A>.
+Note that although NSDocument is part of AppKit, it's a subclass of the root
+NSObject class.<P>
+
+<UL>
+<LI>init - when used along with the alloc method, this is roughly analogous to
+the Object Pascal Create constructor.<P>
+
+<LI>dealloc - this is roughly analogous to the Object Pascal Destroy destructor.<P>
+
+<LI>makeWindowControllers - the only thing our document class knows about the
+UI is that it's managed by a class named MyWindowController, so it creates
+the window controller and adds it to the controller array (a document
+could have multiple windows, although not in this example). Note that 
+MyWindowControllerU is in the uses statement so we have access to
+the MyWindowController class declaration.<P>
+
+<LI>writeToURL_ofType_error - writes the document's data to a file, returning
+True if successful or False and an error if unsuccessful.<P>
+
+<LI>readFromURL_ofType_error - reads the document's data from a file, returning
+True if successful or False and an error if unsuccessful.<P>
+</UL>
+
+So what kind of data should our document contain? Well, to keep things really
+simple, let's just create XML documents that contain a single element called
+"Name" where we save a name entered in the document's window. To create and
+manipulate these XML files we'll use several Foundation classes, which are
+documented <A HREF="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/Foundation/ObjC_classic/_index.html#//apple_ref/doc/uid/20001091">here</A>.
+You could also use the Free Pascal XML units DOM and XmlRead but that's beyond
+the scope of this article.<P>
+
+Now add two additional methods to our document class for getting and setting
+the XML Name element, as well as fill in the overridden methods. You can just
+copy and paste the code from below into your own MyDocumentU.pas file using 
+Xcode's code editor or an editor such as TextWrangler. The lines you need 
+to add are highlighted in <B>bold</B>.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 2-3. The finished Pascal document class.<P>
+<PRE>
+unit MyDocumentU;
+
+{$modeswitch ObjectiveC1}
+
+interface
+
+uses
+  CocoaAll,
+  MyWindowControllerU;
+
+type
+  MyDocument = objcclass(NSDocument)
+<B>  private
+    xmlDoc : NSXMLDocument;</B>
+  public
+    function init : id; override;
+    procedure dealloc; override;
+    procedure makeWindowControllers; override;
+    function writeToURL_ofType_error(absoluteURL: NSURL; typeName: NSString; outError: NSErrorPointer): Boolean; override;
+    function readFromURL_ofType_error(absoluteURL: NSURL; typeName: NSString; outError: NSErrorPointer): Boolean; override;
+<B>    function getName : NSString; message 'getName';
+    procedure setName(name : NSString); message 'setName:';</B>
+  end;
+
+
+implementation
+
+function MyDocument.init : id;
+<B>var
+  err : NSError;</B>
+begin
+  Result := inherited init;
+<B>  if Assigned(Result) then
+    begin
+    xmlDoc := NSXMLDocument.alloc.initWithXMLString_options_error(
+               NSSTR('&lt;MyData&gt;&lt;Name&gt;&lt;/Name&gt;&lt;/MyData&gt;'), 0, @err);
+    if not Assigned(xmlDoc) then
+      begin
+      Result.release;
+      Result := nil;
+      end;
+    end;</B>
+end;
+
+procedure MyDocument.dealloc;
+begin
+<B>  xmlDoc.release;</B>
+  inherited dealloc;
+end;
+
+procedure MyDocument.makeWindowControllers;
+var
+  aMyWindowController : MyWindowController;
+begin
+  aMyWindowController := MyWindowController.alloc.init;
+  addWindowController(aMyWindowController);
+end;
+
+function MyDocument.writeToURL_ofType_error(absoluteURL: NSURL; typeName: NSString; outError: NSErrorPointer): Boolean;
+begin
+<B>  Result := xmlDoc.XMLData.writeToURL_options_error(absoluteURL, 0, outError);
+  if (not Result) and Assigned(outError) then
+    outError^ := NSError.errorWithDomain_code_userInfo(NSOSStatusErrorDomain, 0, nil);</B>
+end;
+
+function MyDocument.readFromURL_ofType_error(absoluteURL: NSURL; typeName: NSString; outError: NSErrorPointer): Boolean;
+begin
+<B>  xmlDoc.release;
+  xmlDoc := NSXMLDocument.alloc.initWithContentsOfURL_options_error(absoluteURL, 0, outError);
+  Result := Assigned(xmlDoc);
+  if (not Result) and Assigned(outError) then
+    outError^ := NSError.errorWithDomain_code_userInfo(NSOSStatusErrorDomain, 0, nil);</B>
+end;
+
+<B>function MyDocument.getName : NSString;
+var
+  err : NSError;
+  nodes : NSArray;
+begin
+  Result := nil;
+  if not Assigned(xmlDoc) then
+    Exit;
+  nodes := xmlDoc.rootElement.nodesForXPath_error(NSSTR('Name'), @err);
+  if nodes.count = 0 then
+    Exit;
+  Result := nodes.objectAtIndex(0).stringValue;
+end;
+
+procedure MyDocument.setName(name : NSString);
+var
+  err : NSError;
+  nodes : NSArray;
+begin
+  if not Assigned(xmlDoc) then
+    Exit;
+  nodes := xmlDoc.rootElement.nodesForXPath_error(NSSTR('Name'), @err);
+  if nodes.count = 0 then
+    Exit;
+  nodes.objectAtIndex(0).setStringValue(name);
+  updateChangeCount(NSChangeDone);
+end;</B>
+
+end.
+</PRE>
+
+The overridden init method now creates an XML object containing the minimum
+XML needed for a new document, for example for use with a new document that was
+not loaded from a file. This XML object is freed in the dealloc method.<P>
+
+Note that much of the code is just error checking. It should be self-explanatory
+once you've familiarized yourself with the classes involved (NSXMLDocument,
+NSError, NSData, NSArray and NSXMLNode).<P>
+
+So now we have our document class, which can create, read and write our simple
+XML document files on demand as well as get and set a document's data.<P>
+
+<HR>
+
+<A name="AddingUI"></A><H2>Adding UI elements and window controller code</H2>
+
+Let's turn our attention to the app's user interface.<P>
+
+Click MyDocument.xib in Xcode's Project navigator to display the
+blank window. First select and delete the dummy "Your document contents 
+here" control. Then drag and drop a Text Field onto the window (review Part 1
+if necessary). Now do two things:<P>
+
+<OL>
+<LI>Click the New Referencing Outlet's circle for the Text Field, then drag 
+and drop it where indicated in the ObjC MyWindowController.h file. Xcode will 
+prompt you for a name - enter "nameTextField".<P>
+
+<LI>Click the delegate's circle for the Text Field, then drag and drop it
+on File's Owner (blue cube). MyWindowController is the owner of the .xib file
+(deployed as .nib), so this means that the window controller will 
+also serve as the Text Field's delegate.<P>
+</OL>
+
+Now click on MyWindowControllerU.pas and look at the code that the template 
+created. It should look like the figure below (as viewed in TextWrangler).<P>
+
+&nbsp;&nbsp;&nbsp;Figure 2-4. The default Pascal window controller class.<P>
+<IMG src="ObjP_Part2-4.jpg" hspace="10" /><P>
+
+As with the document subclass, our window controller subclass overrides 
+several methods. For more information on the NSWindowController class, 
+refer to Apple's documentation 
+<A HREF="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/ApplicationKit/Classes/NSWindowController_Class/Reference/Reference.html#//apple_ref/doc/uid/TP40004152">here</A>.<P>
+
+The windowDidLoad method is called after the document is loaded, 
+so we can add any custom UI code there for setting up the window.<P>
+
+Now add the Text Field's outlet declaration, one additional method, and a line 
+of setup code to windowDidLoad. The code should now look like this, with the new 
+lines in <B>bold</B>.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 2-5. The finished Pascal window controller class.<P>
+<PRE>
+unit MyWindowControllerU;
+
+{$modeswitch ObjectiveC1}
+
+interface
+
+uses
+  CocoaAll;
+
+type
+  MyWindowController = objcclass(NSWindowController)
+     {IBOutlets}
+<B>    nameTextField : NSTextField;</B>
+
+     {IBActions}
+
+  public
+    function init : id; override;
+    procedure dealloc; override;
+    procedure windowDidLoad; override;
+<B>    function control_textShouldEndEditing(control: NSControl; fieldEditor: NSText): Boolean; 
+              message 'control:textShouldEndEditing:';</B>
+  end;
+
+
+implementation
+
+uses
+  MyDocumentU;
+
+function MyWindowController.init : id;
+begin
+  Result := initWithWindowNibName(NSSTR('MyDocument'));
+end;
+
+procedure MyWindowController.dealloc;
+begin
+  inherited dealloc;
+end;
+
+procedure MyWindowController.windowDidLoad;
+begin
+  inherited windowDidLoad;
+<B>  nameTextField.setStringValue(MyDocument(document).getName);</B>
+end;
+
+<B>function MyWindowController.control_textShouldEndEditing(control: NSControl; fieldEditor: NSText): Boolean;
+begin
+  MyDocument(document).setName(fieldEditor.string_);
+  Result := True;
+end;</B>
+
+end.
+</PRE>
+
+A few notes and tips on this code:<P>
+
+<UL>
+<LI>To save yourself some typing when you need to add a method with a long name, 
+you can just copy and paste it from the parsed Cocoa header files included with
+Free Pascal. For example, control_textShouldEndEditing is part of the protocol 
+that you can implement in the delegate class for any NSControl subclass such as 
+NSTextField (remember, MyWindowController is nameTextField's delegate). 
+In this case, you can just copy and paste the method declaration from the 
+NSControl.inc file. And where are these parsed header files? With FPC 2.6.0, 
+the AppKit files are here:<P>
+
+<PRE>
+/Developer/FreePascalCompiler/2.6.0/Source/packages/cocoaint/src/appkit
+</PRE>
+
+The Foundation files are here:<P>
+
+<PRE>
+/Developer/FreePascalCompiler/2.6.0/Source/packages/cocoaint/src/foundation
+</PRE>
+
+<LI>You don't have to use the indicated method name as long as its message
+is correct, although there's probably some benefit to using the default
+method name for consistency. Note that the number of colons in the message 
+is equal to the number of parameters in the method.<P>
+
+<LI>The MyDocumentU unit is in the implementation section's uses statement 
+rather than the interface uses to avoid circular references. We include it 
+so we can cast NSWindowController.document, which is just an untyped id, 
+to MyDocument.<P>
+
+<LI>An underscore was added to the parsed headers for NSText's string method 
+name since <I>string</I> is a reserved word in Pascal.<P>
+
+</UL>
+
+Now compile and run the app. You should be able to create, save and open
+files of type .mydoc1, enter a name to save (press Return or Tab to trigger
+control_textShouldEndEditing), double-click a file in Finder to open it in 
+the app, etc.<P>
+
+<HR>
+
+<A name="NextSteps"></A><H2>Next steps</H2>
+
+If you followed the brief tutorial above, you will have created an actual 
+document-based Cocoa app, writing only a few dozen lines of Pascal code, all 
+done in Xcode 4 (with the possible exception of using an external code editor). 
+You should also have a basic feel for several important Cocoa classes.<P>
+
+It's hard to overstate how much you get "for free" via the Pascal template and 
+the underlying Cocoa functionality. As an exercise, try implementing a similar
+app on any other platform using any other tool.<P>
+
+Note the number of menu commands in the app's menus. Some of these are not
+yet implemented. To extend this app, you could try adding the following:<P>
+
+<UL>
+<LI>Printing - you'll probably need to override NSDocument's 
+printOperationWithSettings_error method.<P>
+
+<LI>Revert - see the NSDocument documentation for more information.<P>
+
+<LI>Call control_textShouldEndEditing in more places so you don't have
+to press Return or Tab.<P>
+</UL>
+
+Don't forget that an Objective Pascal Xcode project also has an escape hatch or 
+fallback position that protects some of your investment in the project. For 
+example, if you decide at some point that you want to develop your app in 
+Objective C instead, all you have to do is delete the Run Script from your target's 
+Build Phases and you've reverted to an ObjC project. You can continue using 
+the project itself, the .xib files you've created, the ObjC .h and .m files, 
+and all of the supporting files. Knowing that you have this "out" is also a good
+argument for starting with ObjP instead of ObjC in the first place.<P>
+
+<HR>
+Copyright 2011 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted April 17, 2011; last edited Dec. 29, 2011.
+<P>
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,415 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2011 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 6: Introduction to iOS for Delphi Developers</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 6: Introduction to iOS for Delphi Developers</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Doesn't Have">Doesn't Have</A><BR>
+<A HREF="#Does Have">Does Have</A><BR>
+<A HREF="#iOS Simulator">iOS Simulator</A><BR>
+<A HREF="#Pascal Language">Pascal Language</A><BR>
+<A HREF="#Runtime Library">Runtime Library (RTL)</A><BR>
+<A HREF="#Free Component Library">Free Component Library (FCL)</A><BR>
+<A HREF="#Xcode Way vs. Delphi Way">The Xcode Way vs. the Delphi Way</A><BR>
+<P>
+
+<HR>
+
+<A name="Introduction"></A><H2>Introduction</H2>
+In many ways, OS X has more in common with Windows than iOS has with either.
+These notes describe some of the ways that iOS differs from a desktop operating
+system and how you can address some of those differences when programming in 
+Pascal.<P>
+
+<B><I>Tip:</I></B> If you've never developed for OS X or iOS before, you may
+find the previous articles in this series helpful. The complete list of 
+articles is <A HREF="ObjP_Intro.html">here</A>. You can ignore most of the 
+discussion of designing the user interface in Xcode since you'll be doing that 
+in Delphi as usual.<P>
+
+<HR>
+
+<A name="Doesn't Have"></A><H2>Doesn't Have</H2>
+
+Here's a list of some things that you will <I>not</I> find on iOS:<P>
+<UL>
+<LI>Menus.
+<LI>User interaction with a precise pointing device like a mouse.
+<LI>Tab or Esc keys.
+<LI>Dialog boxes. Instead, what you see on the screen is replaced by another
+"view", usually as the result of a touch event.
+<LI>Common dialogs. The closest you'll get is an alert box that you can 
+use to display error messages. On Windows and OS X, common dialogs are used
+to select files and similar file system activities. In many iOS apps, users 
+do not perceive that they are working with "files" - instead, they pick from
+items that may happen to correspond to files.
+<LI>One-size-fits-all user interface. If you're creating a "universal app"
+that targets both iPhone and iPad, you will almost certainly want to design
+two different user interfaces.
+<LI>Apps that include external libraries; all of an app's code must be linked into
+a single executable file.
+<LI>Windows-like registry.
+</UL>
+
+<HR>
+
+<A name="Does Have"></A><H2>Does Have</H2>
+
+Here's a list of some things that you <I>will</I> find on iOS:<P>
+<UL>
+<LI>Standard Unix file system. However, there are some things about it worth noting:
+  <UL>
+  <LI>Case-sensitive file system like Linux, unlike OS X and Windows. Pay 
+      attention to this in <I>uses</I> statements too - this will help
+      prepare you for Android and Linux when they come along.
+  <LI>The separator character in file paths is the forward slash like on OS X 
+      and Linux, but if you're using a standard RTL function instead of a string 
+      literal in forming paths, that won't be a problem.
+  <LI>"Sandboxed" apps. For more information, see <A HREF="ObjP_Part5.html#The Sandbox">Part 5</A>.
+  </UL>
+<LI>Code-signed apps. You can "code-sign" an application on just about any
+platform, but on iOS it's required for installing an app on an iOS device.
+It also involves downloading a provisioning profile for your app from 
+Apple's developer site. For more information, see <A HREF="ObjP_Part4.html#ProvisioningProfile">Part 4</A>.
+<LI>Extensive <A HREF="http://developer.apple.com/technologies/ios/cocoa-touch.html">libraries</A> 
+for user interface, networking, data and more.
+<LI>Familiar <A HREF="http://developer.apple.com/technologies/ios/graphics-and-animation.html">libraries</A> 
+like OpenGL for graphics, animation and more. (It appears as though everything
+on iOS is drawn using OpenGL, making iOS animation <A HREF="http://nfarina.com/post/8239634061/ios-to-android">"hopelessly fast"</A>
+compared to Android according to one experienced developer.)
+</UL>
+
+<HR>
+
+<A name="iOS Simulator"></A><H2>iOS Simulator</H2>
+
+You'll need a Mac to develop for iOS, but you do not need an actual iOS device
+to get started since Xcode includes iOS Simulator that you can use
+to simulate various iOS devices and versions.<P>
+
+Remember that iOS Simulator is a <I>simulator</I>, not an <I>emulator</I>. 
+It does not emulate the ARM instruction set, but rather executes apps that have 
+been compiled for x86 just like normal OS X apps. These apps are linked against
+x86 versions of the iOS frameworks rather than against ARM versions.<P>
+
+As a result, how an app operates under the Simulator can differ from how it
+operates on an actual device. This means you need to test on an actual
+device before deploying your app or submitting it to the App Store. However,
+the benefit of a simulator is speed - if you've ever developed for Android, 
+you know that the Android emulator is almost useless because it's so slow.<P>
+
+Here are some things to watch out for when using the Simulator:
+
+<UL>
+<LI>If you forget that iOS has a case-sensitive file system, your app may run
+fine under the Simulator, but not on an iOS device.
+<LI>An app running under the Simulator is using the full power of the Mac's
+Intel processor. It may run much slower on an iOS device.
+<LI>Although tiny, an iOS device has hardware that you probably won't have
+on your Mac, including phone, accelerometer, GPS, camera, etc. It's hard
+to simulate these things - another reason why testing on an actual device
+is essential.
+<LI>An app running under the Simulator is not sandboxed or code-signed the
+way it is on an iOS device, so you can do things that don't make sense or
+are not permitted on an actual device. For example, you can move files in and 
+out of your app's home directory under the Simulator using Finder, pretty much
+like a normal OS X app. On an iOS device, much of this access is restricted
+or indirect. For more information, see <A HREF="ObjP_Part5.html#Sharing Files">Part 5</A>.
+</UL>
+
+<HR>
+
+<A name="Pascal Language"></A><H2>Pascal Language</H2>
+
+Because you'll be using Free Pascal with Delphi XE2 to compile for both 
+iOS Simulator and iOS devices, be aware that there are a few differences 
+in language features between Free Pascal and Delphi. In general, these are 
+either newish Delphi language features not yet supported by Free Pascal or 
+somewhat esoteric features that you might not even have known about, much 
+less ever used.<P>
+
+Here's a list of features not yet supported in the current stable version
+of Free Pascal (2.4.4):<P>
+
+<A HREF="http://wiki.freepascal.org/delphi_language_features_which_fpc_does_not_have">http://wiki.freepascal.org/delphi_language_features_which_fpc_does_not_have</A><P>
+
+However, since presumably you'll be using version 2.5.1, some of these 
+features should be available, as described here:<P>
+
+<A HREF="http://wiki.freepascal.org/FPC_New_Features_Trunk">http://wiki.freepascal.org/FPC_New_Features_Trunk</A><P>
+
+Free Pascal supports UnicodeString, but <I>string</I> is still AnsiString.
+WideString is also available.<P>
+
+<H3>Objective Pascal</H3>
+
+Free Pascal 2.5.1 supports an optional syntax extension that allows you to
+work with Objective C classes in Pascal on OS X and iOS. The primary use for this
+is to work with Objective C frameworks such as <B>Foundation</B> directly in Pascal. 
+For example, you might want to use the Foundation framework's NSString class, which 
+fully supports Unicode. More information about Objective Pascal is here:<P>
+
+<A HREF="http://wiki.freepascal.org/FPC_PasCocoa">http://wiki.freepascal.org/FPC_PasCocoa</A><P>
+
+A list of Objective C classes available with the Foundation framework on iOS is
+<A HREF="http://developer.apple.com/library/ios/#documentation/Cocoa/Reference/Foundation/ObjC_classic/_index.html#//apple_ref/doc/uid/20001091">here</A>.
+
+<HR>
+
+<A name="Runtime Library"></A><H2>Runtime Library (RTL)</H2>
+
+You may not need to use the Objective C frameworks much for basic tasks. The 
+units included with Free Pascal and Delphi should insulate you from much of the 
+underlying system. To start, Free Pascal includes many of the standard non-UI 
+<A HREF="http://www.freepascal.org/docs.var">runtime units</A> 
+that you use in any Delphi application, including the following:<P>
+
+<UL>
+<LI>System
+<LI>SysUtils
+<LI>Classes
+<LI>Variants
+<LI>DateUtils
+<LI>Math
+</UL>
+
+You use these units the same as you do in Delphi and they should work on iOS 
+the same as they do on Windows.<P>
+
+Presumably Delphi XE2 will include the <B>IOUtils</B> unit for iOS. This unit should 
+make working with some aspects of the iOS file system easier. For example,
+to obtain the path to your app's temporary directory (<I>tmp</I> in the app's
+home directory), in Objective C you would use the Foundation framework's
+NSTemporaryDirectory function, as illustrated in this snippet of Objective 
+Pascal code:<P>
+
+<PRE>
+  var
+    tmpDir : NSString;
+  begin
+    tmpDir := NSTemporaryDirectory;
+</PRE>
+
+To use tmpDir with the Pascal RTL, you would first need to convert it to
+an AnsiString. Part 5 introduced the <A HREF="NSHelpers.pas">NSHelpers</A> unit 
+that provides some basic string conversion routines for doing just that. 
+However, if we assume the presence of the IOUtils unit, then presumably you 
+could just do this instead:<P>
+
+<PRE>
+  var
+    tmpDir : string;
+  begin
+    tmpDir := TPath.GetTempPath;
+</PRE>
+
+More problematic is obtaining the path to your app's Documents directory. In
+Objective Pascal, you would use a somewhat awkward construction like this:<P>
+
+<PRE>
+  var
+    paths  : NSArray;
+    docDir : NSString;
+  begin
+    paths := NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, True);
+    docDir := paths.objectAtIndex(0);
+</PRE>
+
+So what's the RTL equivalent? Well, presumably you <I>could</I> do something 
+like this using IOUtils, although this code assumes both the name and relative 
+location of the Documents subdirectory within the app home directory:
+
+<PRE>
+  var
+    docDir : string;
+  begin
+    docDir := TPath.GetHomePath + TPath.DirectorySeparatorChar + 'Documents';
+</PRE>
+
+In some cases you may be forced to use the Foundation framework if a Pascal
+RTL equivalent is not provided. For example, an iOS app's home directory includes
+a Preferences subdirectory. You never write directly to Preferences, though. 
+Instead you use the <A HREF="http://developer.apple.com/library/ios/#documentation/Cocoa/Reference/Foundation/Classes/NSUserDefaults_Class/Reference/Reference.html#//apple_ref/doc/uid/TP40003764">NSUserDefaults</A>
+class to read and write user preferences and to save and restore your app's state.
+You can also use the <B>CFPreferences</B> unit, since this calls a C library 
+in the older <A HREF="http://developer.apple.com/library/ios/#documentation/CoreFoundation/Reference/CoreFoundation_Collection/_index.html">
+<I>Core</I>Foundation</A> framework and doesn't require Objective C.
+(The Foundation framework is mostly Objective C wrappers around
+CoreFoundation functions - that is, Foundation turns these C functions into
+Objective C classes.)<P>
+
+<HR>
+
+<A name="Free Component Library"></A><H2>Free Component Library (FCL)</H2>
+
+Free Pascal includes an extensive collection of additional units known as the
+<A HREF="http://www.freepascal.org/docs.var">Free Component Library</A> (FCL). 
+Many of these units have no counterpart in 
+Delphi's standard units and, where they do, they're generally not compatible
+with Delphi's. If you use any of these units, you'll probably be tying your
+code, or at least a portion of it, to Free Pascal. With that in mind, however,
+you may find some of these units to be extremely useful, particularly on 
+iOS. And it may also encourage you to divide your code into units
+that can easily be swapped out on other platforms.<P>
+
+For example, FCL includes units for working with XML files in a normal 
+tree-oriented DOM fashion. The Objective C Foundation framework includes the 
+<A HREF="http://developer.apple.com/library/ios/#documentation/Cocoa/Reference/Foundation/Classes/NSXMLParser_Class/Reference/Reference.html#//apple_ref/doc/uid/TP40003773">NSXMLParser</A>
+class, but this is an event-drive parser, designed for speed and 
+minimal memory use, and you may not find it very useful. However, if you use 
+the FCL XML units, you won't be able to compile your XML-handling code with 
+Delphi.<P>
+
+For example, to load an XML file with the FCL XML units, you might do 
+something like this:<P>
+
+<PRE>
+  var
+    XmlDoc : TXMLDocument;
+  begin
+    ReadXmlFile(XmlDoc, FileName);
+</PRE>
+
+In contrast, with Delphi you might write it like this:<P>
+
+<PRE>
+  var
+    XmlDoc : IXMLDocument;
+  begin
+    XmlDoc := TXMLDocument.Create(nil);
+    XmlDoc.FileName := FileName;
+</PRE>
+
+FCL also includes units for working with <A HREF="http://www.sqlite.org/">SQLite</A>
+databases. Every Mac and iOS device includes the SQLite library and since it's 
+a normal C library, you don't need Objective C to use it, just the FCL <B>sqlite3</B> 
+and <B>SQLite3db</B> units.<P>
+
+For example, if your iOS app included a SQLite version of the FishFact database, 
+you could open and query it like this:<P>
+
+<PRE>
+  var
+    DbFileName : string;
+    SqliteDb   : TSQLite;
+    FishName   : string;
+    QryResult  : TStringList;
+  begin
+    DbFileName := 'biolife.sqlitedb';  //add appropriate path
+    SqliteDb := TSQLite.Create(DbFileName);
+    try  //assuming SqliteDb.LastError=SQLITE_OK
+      FishName := 'Clown Triggerfish';
+      QryResult := TStringList.Create;
+      if SqliteDb.Query('SELECT "Species Name" FROM BIOLIFE WHERE Common_Name = "' +
+                        FishName + '";', QryResult) then
+        begin
+        // do something with QryResult.Strings[1]
+        end;
+    finally
+      QryResult.Free;
+      SqliteDb.Free;
+      end;
+</PRE>
+
+<HR>
+
+<A name="Xcode Way vs. Delphi Way"></A><H2>The Xcode Way vs. the Delphi Way</H2>
+
+The gold standard for iOS development is Xcode, 
+<A HREF="http://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/ObjectiveC/Introduction/introObjectiveC.html">Objective C</A>,
+and direct use of <A HREF="http://developer.apple.com/technologies/ios/cocoa-touch.html">Cocoa Touch</A>
+frameworks. However, many Delphi developers are likely to find this approach alien, 
+if not downright repellent, particularly when designing an app's user interface.<P>
+
+Parts 1-5 of this series present an approach that substitutes Objective Pascal
+for Objective C, but otherwise uses Xcode and Cocoa Touch in essentially the
+same way as they are used in Objective C development. However, because Pascal
+is not integrated into the Xcode IDE, this approach requires some fairly 
+awkward compromises. For example, since the only way to wire "connections"
+between the user interface layout and code in Xcode is via Objective C header 
+files, an Objective Pascal Xcode project requires "placeholder" Objective C 
+files which are not otherwise needed.<P>
+
+Delphi XE2 would appear to provide a reasonable "third way", moving user
+interface design and code editing out of Xcode (and off the Mac entirely)
+and into a Windows-hosted IDE that Delphi developers should find familiar,
+relegating Xcode to the final build step. To be sure, this approach comes 
+with its own bit of awkwardness (flipping between Windows and OS X), but
+provides cross-platform opportunities that would not be possible with an
+Xcode-only approach.<P>
+
+However, there are some things that will probably require Xcode or direct
+access to Objective C frameworks. These range from the straightforward
+to the complex and the question is whether and how Delphi itself will
+address them.<P>
+
+For example, on both OS X and iOS, an app's 
+<A HREF="http://developer.apple.com/library/mac/#documentation/General/Reference/InfoPlistKeyReference/Introduction/Introduction.html#//apple_ref/doc/uid/TP40009247">Info.plist</A> 
+file controls many aspects of the app's behavior and is used to set the app's
+version, copyright statement, file associations, etc. While this is just
+an XML file, using the Xcode property list editor to set these things (rather
+than doing it on the Delphi side) would seem logical. One small 
+example: To include a custom font file with an iOS app, you just add
+the name of the font to the UIAppFonts array in the Info.plist file
+and add the font .ttf file to your Xcode project. When Xcode builds your
+app, it will copy the font file into the app bundle automatically.
+It would seem rather pointless to duplicate this iOS-specific setting
+in a Windows-hosted IDE where it has no cross-platform correspondence.<P>
+
+A bigger challenge is accessing device-specific functionality. Will this be
+done via the iOS Objective C frameworks (perhaps accessed via Objective Pascal
+syntax) or in a cross-platform way? <A HREF="http://www.phonegap.com/">PhoneGap</A> 
+shows that a great deal of mobile functionality can be supported in a
+cross-platform fashion, even for <A HREF="http://docs.phonegap.com/">JavaScript</A>, 
+so perhaps a cross-platform library for mobile will emerge eventually for
+Delphi too.<P>
+
+For example, to add a Google map to an iOS app in Xcode, you use the
+<A HREF="http://developer.apple.com/library/ios/#documentation/MapKit/Reference/MapKit_Framework_Reference/_index.html">MapKit</A>
+framework: Just drop an MKMapView onto a view, make a connection for it (in this
+case, myMap), then add code like this to display the map:<P>
+
+<PRE>
+  var
+    region : MKCoordinateRegion;
+  begin
+    region.center.latitude := myLatitude;
+    region.center.longitude := myLongitude;
+    region.span.latitudeDelta := 0.02;
+    region.span.longitudeDelta := 0.02;
+    myMap.setRegion(region);
+    myMap.setMapType(MKMapTypeHybrid);
+</PRE>
+
+Most mobile platforms support mapping, so it's not hard to imagine a 
+cross-platform Pascal library that supports, say, both Google and Bing
+maps.<P>
+
+<HR>
+Copyright 2011 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted Aug. 7, 2011.
+<P>
+
+</BODY>
+
+</HTML>

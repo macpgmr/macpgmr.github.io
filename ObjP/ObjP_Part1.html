@@ -1,0 +1,593 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2011 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 1: OS X and Xcode 4</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 1: OS X and Xcode 4</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#WhyUsePascal">Why use Pascal at all?</A><BR>
+<A HREF="#Requirements">Requirements</A><BR>
+<A HREF="#BriefTour">A brief tour of Free Pascal on your Mac</A><BR>
+<!--<A HREF="#BuildingCompiler">Building the Free Pascal compiler</A><BR>-->
+<A HREF="#YourFirstApp">Your first Objective Pascal Cocoa app</A><BR>
+<A HREF="#BuildLog">Reviewing the build log</A><BR>
+<A HREF="#AddingUI">Adding UI elements and code</A><BR>
+<A HREF="#NextSteps">Next steps</A><BR>
+<P>
+
+<HR>
+
+<A name="Introduction"></A><H2>Introduction</H2>
+These notes describe how to get started developing Cocoa applications for the 
+Mac using Pascal. Development is done in Apple's Xcode 4, with
+the following substitutions:
+<OL>
+<LI>You create a new project in Xcode using a custom Pascal template instead of
+a built-in Objective C template.<P>
+<LI>You compile your Pascal code in Xcode using a Free Pascal compiler (FPC), 
+which provides an "Objective Pascal" dialect for working with Cocoa.<P>
+</OL>
+
+But first a few preliminaries in familiar question-answer form:<P>
+
+<H3>What is Cocoa?</H3>
+
+Cocoa is Apple's recommended user interface framework for OS X and comes 
+installed on every Mac. Like any UI framework, Cocoa has many similarities 
+to the Delphi VCL and Lazarus LCL component libraries. However, it also 
+differs in important ways from VCL and LCL and provides components and 
+behavior that have no equivalent in those libraries.<P>
+
+Cocoa is written in Objective C and Cocoa apps are typically written
+in Objective C.<P>
+
+A Cocoa tutorial is <A HREF="http://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/CocoaFundamentals/Introduction/Introduction.html#//apple_ref/doc/uid/TP40002974">here</A>.<P>
+A list of Cocoa's AppKit classes is <A HREF="http://developer.apple.com/library/mac/#documentation/Cocoa/Reference/ApplicationKit/ObjC_classic/_index.html">here</A>.<P>
+
+<H3>What is Objective C?</H3>
+
+Objective C documentation is <A HREF="http://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/ObjectiveC/Introduction/introObjectiveC.html">here</A>.<P>
+
+Objective C's extensions to ANSI C are described <A HREF="http://developer.apple.com/library/mac/#referencelibrary/GettingStarted/Learning_Objective-C_A_Primer/index.html">here</A>.<P>
+
+If you've used Delphi or Free Pascal, you may find this useful: <A HREF="http://delphitococoa.wordpress.com/concept-comparison/">http://delphitococoa.wordpress.com/concept-comparison</A>.<P>
+
+<H3>What is Objective Pascal?</H3>
+
+Objective Pascal (ObjP) is an optional syntax extension to the traditional
+Object Pascal language of Delphi and Free Pascal. It was introduced 
+with Free Pascal 2.5.1. Using the extended ObjP 
+syntax, you can use and declare Objective C classes, categories and protocols 
+in Pascal, thereby allowing you to work directly with Cocoa classes without 
+the need for any "bridge" or intermediate layer. You can also mix traditional 
+Object Pascal code with your ObjP code, as well as pure Object Pascal units.<P>
+
+Objective Pascal syntax is described here: <A HREF="http://wiki.freepascal.org/FPC_PasCocoa">http://wiki.freepascal.org/FPC_PasCocoa</A>.<P>
+
+<H3>Why use Cocoa directly?</H3>
+
+While cross-platform UI frameworks can provide a way to use Cocoa <I>in</I>directly,
+they often bury Cocoa beneath thick layers of intermediate code where bugs, 
+odd behavior, performance problems, code bloat, and non-standard look and
+feel can be introduced. When you use Cocoa directly with Objective C or
+Objective Pascal, nothing comes between your code and the Cocoa framework.
+Typically this results in smaller, better-looking programs that are
+easier to maintain and more pleasing to your users.<P>
+
+<H3>Why use Objective Pascal?</H3>
+
+Objective Pascal allows you to work with "pure" Cocoa in Pascal. Almost
+anything that you can do in Objective C you can do in Objective Pascal,
+including the following:<P>
+<OL>
+<LI>Objective C classes. For example, to inherit from the Cocoa NSWindow class:<P>
+<PRE>
+type
+  MyWindow = objcclass(NSWindow)
+  end;
+</PRE>
+
+<LI>Objective C categories. Categories are similar to Delphi helper classes, 
+but without Delphi's restriction on only one helper class per extended
+class. This means you can use categories to simulate partial classes like
+in C#, VB.NET and Delphi Prism. In addition to adding methods to a class
+that's defined elsewhere, you can also use a category to replace methods 
+in a class with your own implementation.<P>
+
+<LI>Objective C protocols. Protocols are similar to Object Pascal interfaces
+and are used extensively with Cocoa. In Objective C, protocol methods
+can be optional, meaning you only have to implement the protocol's required 
+methods.
+</OL>
+
+<HR>
+<A name="WhyUsePascal"></A><H2>Why use Pascal at all?</H2>
+
+This is a legitimate question that requires some discussion.<P>
+
+Xcode 4 is a decidedly Objective C-oriented IDE, just as Delphi and Lazarus
+are Pascal-oriented IDEs. For years Apple has invested in the
+open-source <A HREF="http://llvm.org/">LLVM Project</A> and Xcode 4 now 
+incorporates the Clang frontend and LLVM backend compilers for C languages.
+Clearly Xcode 4 is what Apple wants you to use for OS X and iOS development
+and they make it available at a nominal cost. So why would you want to
+deviate from the Objective C that Xcode supports so well?<P>
+
+One of the benefits of using cross-platform tools is the opportunity 
+to recycle skills and code. Hence our interest in Pascal. Between Delphi and 
+Free Pascal, all the important platforms are well covered, whereas Xcode 
+targets only Apple's platforms and even Objective C, while technically 
+cross-platform, is effectively single-platform because most existing 
+Objective C code assumes Apple frameworks.<P>
+
+However, if you don't have both Pascal skills <I>and</I> code to recycle, 
+you might find that starting fresh with Objective C is a better approach. These
+notes generally assume that you have both Pascal skills and code that you
+want to utilize.<P>
+
+But what <I>kind</I> of skills and code are suitable for recycling into
+an OS X or iOS app? Let's start with some code candidates.
+
+<UL>
+<LI>Delphi and Lazarus form files and units? No, nothing of this can be used
+with Cocoa other than just for general layout ideas or label wording.
+<LI>Third-party VCL/LCL controls? No, although since Cocoa is such an extensive
+framework you may find that you won't need, say, a custom grid control.
+<LI>Code for a scientific model? Yes, this would probably be a good candidate
+for use in an OS X or iOS app since it's likely that the model's code is 
+already independent of its app's user interface and possibly uses XML or other
+text files as input.
+<LI>Code for a business process? Maybe. Business apps are often tied to a particular
+database type or proprietary technology, so it depends on how well the database
+is separated from the business process code and how easy it is to switch databases 
+if that's appropriate.
+<LI>Code for a companion mobile app? Yes. You normally don't "port" a desktop
+app to iOS. Rather, you use portions of the desktop app's code to develop a
+new "product" that provides a subset of the desktop app's features and
+often supplements the desktop app.
+</UL>
+
+Now what about existing skills? In general, experience with these Windows
+technologies and conventions is probably of little value in the world of 
+OS X and iOS:
+
+<UL>
+<LI>Windows registry
+<LI>COM Automation, ActiveX, etc.
+<LI>Resources embedded in executables
+<LI>Help (other than HTML)
+<LI>Packaging and installing
+</UL>
+
+A useful exercise that you might do when contemplating a move to OS X or iOS is
+to list out all the standard and third-party components and tools that you 
+currently use and then look for a Mac equivalent. For example, you might have
+a list that looks like this:<P>
+
+<TABLE BORDER=1 CELLPADDING=3>
+
+<TR VALIGN=TOP>
+<TH>Component or tool</TH>
+<TH>OS X equivalent</TH>
+<TH>iOS equivalent</TH>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>TRichEdit</TD>
+<TD>Cocoa WebView</TD>
+<TD>CocoaTouch UIWebView</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>THtmlViewer (or TWebBrowser)</TD>
+<TD>Cocoa WebView</TD>
+<TD>CocoaTouch UIWebView</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>Orpheus TOvcTable</TD>
+<TD>Cocoa NSTableView</TD>
+<TD>CocoaTouch UITableView</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>Database stuff</TD>
+<TD>CoreData framework or Sqlite library</TD>
+<TD>CoreData framework or Sqlite library</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>Web Service Toolkit</TD>
+<TD>CoreServices framework</TD>
+<TD>?</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>Inno Setup</TD>
+<TD>Xcode: Product | Archive</TD>
+<TD>Xcode: Product | Archive</TD>
+</TR>
+
+</TABLE>
+<P>
+
+<HR>
+
+<A name="Requirements"></A><H2>Requirements</H2>
+
+<UL>
+<LI>Mac with OS X 10.6 Snow Leopard or later (10.7 Lion or later recommended).<P>
+<LI>Xcode 4.2 or later (Xcode 4.5 or later recommended). Available for download 
+if you're in an Apple developer program (US$99/year) or free via the Mac App Store.<P>
+<LI>Free Pascal compiler version 2.6.2 for OS X. An installer is available from
+here: <A HREF="ftp://freepascal.stack.nl/pub/fpc/dist/2.6.2/i386-macosx/">ftp://freepascal.stack.nl/pub/fpc/dist/2.6.2/i386-macosx/</A>.<P>
+<LI>Custom Xcode templates for Objective Pascal. These are available from 
+<A HREF="Xcode_Templates.html">here</A>. 
+Unzip and place the Objective Pascal folder below 
+/Users/yourname/Library/Developer/Xcode/Templates
+(you will need to create the Templates folder if it doesn't exist).<P>
+<!--<LI>Subversion client for obtaining Free Pascal compiler source. You can use 
+Subversion frontends like <A HREF="http:/www.versionsapp.com">Versions</A> or 
+<A HREF="http://www.zennaware.com">Cornerstone</A> or you can use
+the command-line SVN. You can also check out code using Xcode (File | 
+Source Control | Repositories, then click + in the lower-left and choose
+Checkout or Clone Repository).<P>-->
+<LI>Text editor for creating miscellaneous files. 
+<A HREF="http://www.barebones.com/products/textwrangler/">TextWrangler</A>
+includes full syntax highlighting for many file formats and programming languages, 
+including shell scripts, HTML, XML, Object Pascal, etc. It's free and is also available
+from the Mac App Store.<P>
+</UL>
+
+<HR>
+<A name="BriefTour"></A><H2>A brief tour of Free Pascal on your Mac</H2>
+
+The Free Pascal installer places files in several locations on your Mac:<P>
+
+<UL>
+<LI>/Developer/Documentation/Free Pascal Compiler - FPC docs are installed here.<P>
+<LI>/Developer/FreePascalCompiler - source for compiler and runtime
+libraries is installed here.<P>
+<LI>/usr/local/share/examples - source for examples is installed here.<P>
+<LI>/usr/local/lib/fpc - compilers and compiled units are installed here.<P>
+<LI>/usr/local/bin - various FPC utilities and symbolic links (symlinks) to
+the actual compilers are installed here.
+</UL>
+
+Since /usr/local/bin should be in your system path, open a Terminal window
+and enter the following to see information about the 32-bit and 64-bit FPC
+compilers for OS X:<P>
+
+<PRE>
+ppc386 -iDVTOTP
+2013/02/03 2.6.2 darwin i386
+
+ppcx64 -iDVTOTP
+2013/02/03 2.6.2 darwin x86_64
+</PRE>
+
+<!--<HR>
+
+<A name="BuildingCompiler"></A><H2>Building the Free Pascal compiler</H2>
+
+<OL>
+<LI>Install the current release of Free Pascal. We'll use this compiler to 
+bootstrap the 2.5.1 compiler from source:<P>
+
+<A HREF="ftp://ftp.freepascal.org/pub/fpc/dist/2.4.4/i386-macosx/fpc-2.4.4.intel-macosx.dmg">ftp://ftp.freepascal.org/pub/fpc/dist/2.4.4/i386-macosx/fpc-2.4.4.intel-macosx.dmg</A><P>
+
+<LI>Check out the Free Pascal source. To use the SVN command line version,
+copy and paste this in a Terminal window:
+
+<PRE>
+svn co http://svn.freepascal.org/svn/fpc/branches/fixes_2_6 /Developer/ObjectivePascal/fpc
+</PRE>
+
+This will create the ObjectivePascal/fpc folder in your /Developer folder and
+download the compiler source. If you prefer to check out source under your home 
+folder, substitute something like /Users/yourname/objp/fpc.<P>
+
+<LI>Create the build script. Although you could just copy and paste these 
+commands one at a time to a Terminal command line, it makes sense to put them
+into a shell script so you can reuse it later. In TextWrangler or other 
+text editor, copy and paste the following lines, then save the file with 
+a .sh extension. If you checked out to a different location, edit the first line.
+
+<PRE>
+cd /Developer/ObjectivePascal/fpc
+sudo make distclean -j 3
+make FPC=/usr/local/lib/fpc/2.4.4/ppc386 OPT="-ap" distclean all -j 2
+sudo make FPC=`pwd`/compiler/ppc386 install
+</PRE>
+
+<LI>Run the build script.<P>
+
+First set the script to be executable:
+<PRE>
+chmod +x scriptname.sh
+</PRE>
+
+Then run it, entering your password when prompted. The password is needed 
+because we'll be installing the compiler in a place (/usr) that's normally 
+read-only.
+<PRE>
+sudo ./scriptname.sh
+</PRE>
+
+This script will take a few minutes to complete since you're building not only
+the compiler but also compiling the runtime units (SysUtils, Classes, etc.),
+CoreFoundation unit (MacOSAll), AppKit/Foundation unit (CocoaAll),
+CoreData unit (CoreData) and WebKit unit (WebKit). When complete, 
+the compiler (ppc386) will be installed in /usr/local/lib/fpc/2.5.1 and 
+the compiled units will be installed in /usr/local/lib/fpc/2.5.1/units/i386-darwin.
+To browse these files in Finder, choose Go | Go to Folder and enter /usr .<P>
+
+<LI>Test the compiler.<P>
+Copy and paste this to a Terminal command line to display the compiler's date,
+version and target OS and processor:<P>
+<PRE>
+/usr/local/lib/fpc/2.5.1/ppc386 -iDVTOTP
+</PRE>
+</OL>-->
+
+<HR>
+
+<A name="YourFirstApp"></A><H2>Your first Objective Pascal Cocoa app</H2>
+
+Start Xcode and choose File | New | New Project. Under Mac OS X you should see
+Objective Pascal (if not, you probably don't have the templates installed
+in the correct location). Click Objective Pascal and select the Simple Cocoa
+Application template, then click Next and enter the following:<P>
+
+<UL>
+<LI>Product Name - enter <B>Test1</B> - this will be used for your
+project name too.<P>
+<LI>Company Identifier - enter whatever you want (for example, com.mycompany); 
+you can change this later.<P>
+<LI>App Store Category - select whatever you want; you can also change this later.<P>
+<LI>App Delegate Class - enter <B>Test1AppDelegate</B>.
+</UL>
+Now click Next and navigate to where you want to save the project files that 
+will be created. For example, if you navigate to /Users/yourname/Documents and 
+you entered Test1 for your project name, Xcode will create a folder named Test1 
+under Documents. Inside this folder it will create two additional folders, 
+named Test1 and Test1.xcodeproj.<P>
+
+Test1.xcodeproj contains various project folders and files. In general, you
+can ignore these since they're only modified by Xcode. The Test1 folder
+contains the source code and other files that you'll work with.<P>
+
+With a new project, the left pane will look something like the illustration 
+below once you've expanded all the groups of files. This is the 
+Project navigator; you can show it at any time by clicking the leftmost button 
+in the row of navigator buttons at the top of the pane.<P>
+
+If you click one of the files in the Project navigator, Xcode opens it with 
+an appropriate editor in the pane to the right.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1-1. Xcode 4 Project navigator.<P>
+<IMG src="ObjP_Part1-1.jpg" hspace="10" align="left" /><P>
+ReadMe.txt - brief getting-started instructions for the new project.<P>
+
+MainMenu.xib - for now you can think of this as similar to a main form .dfm or 
+.lfm file; it contains a menu and a blank window where you'll drop Cocoa
+controls.<P>
+
+Test1AppDelegate.h / Test1AppDelegate.m - the only way to make "connections"
+in an .xib file is by dragging a control's Outlet or Action to the delegate class's
+header file, so these two Objective C files are included for that purpose
+but are otherwise only placeholders.<P>
+
+Test1.pas - this is the Pascal program file.<P>
+
+Test1AppDelegateU.pas - this file contains the Pascal delegate class equivalent
+to Test1AppDelegate.h; you enter your code in this file. (The "U" was added so the
+unit name does not conflict with the delegate class name. You can rename this
+file; just be sure to change the unit name at the top of the file and in
+the program file's uses statement too.)<P>
+
+Test1-Info.plist - this XML file contains version information and other vital 
+settings for your app.<P>
+
+InfoPlist.strings - localized versions of Info.plist keys can go here.<P>
+
+main.m / Test1-Prefix.pch - main ObjC file and "prefix header" file.<P>
+
+Credits.rtf - if you want to include a file in your app with team members'
+names, edit this file; otherwise you can delete it.<P>
+
+Frameworks - all Cocoa apps use the AppKit and Foundation frameworks; you can 
+expand these to view the framework header files (.h).<P>
+
+Products - Test1.app is the app bundle that constitutes your app.<P>
+<BR clear="all"><P>
+
+Without doing anything else, choose Product | Run. Your app should run, 
+displaying a blank window and the app's menu on the menu bar at the top
+of the screen. Choose Quit from the app menu to exit the app.<P>
+
+<B><I>Tip:</I></B> You can also create a 64-bit version of your app. 
+Just select the 64-bit scheme at top-left and choose Product | Run again.
+Xcode will now use the ppcx64 compiler instead of ppc386 to build your app.<P>
+
+<HR>
+
+<A name="BuildLog"></A><H2>Reviewing the build log</H2>
+
+When you choose Product | Run or Product | Build, Xcode builds your app.
+If the build fails, for example due to a compile error, Xcode will
+display a red exclamation mark in the toolbar status box. Click the
+exclamation mark to open the Issue navigator. You can test this by entering
+some invalid code in one of your Pascal files. In the Issue navigator,
+click the first issue to see the complete build log and the compiler 
+error message.<P>
+
+If the build succeeds, you can still review the build log by clicking the
+Log navigator button (rightmost button at the top of the navigator pane). The 
+illustration below shows what you should see.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1-2. The Xcode 4 build log.<P>
+<IMG src="ObjP_Part1-2.jpg" hspace="10" /><P>
+
+Here's a brief description of the build steps you should see with a simple app 
+like what we created in the previous section.
+
+<UL>
+<LI>Process Test1/Test1-Info.plist - substitutes actual values for the 
+placeholders in this file and copies it into the app bundle.<P>
+
+<LI>Precompile Test1/Test1-Prefix.pch
+<LI>Compile Test1AppDelegate.m
+<LI>Compile main.m
+<LI>Link Test1 - since the two ObjC files are listed in the target's 
+Compile Sources build phase, they still get compiled and linked. You can 
+remove them from there, but that will disable your ability to make 
+.xib connections, so leave them alone for now.<P>
+
+<LI>Copy Test1/en.lproj/InfoPlist.strings - copies localized strings
+into the app bundle.<P>
+
+<LI>Copy Credits.rtf - copies Credits.rtf into the app bundle.<P>
+
+<LI>Compiling MainMenu.xib - creates MainMenu.nib and copies it into
+the app bundle.<P>
+
+<LI>Run custom shell script 'Run Script' - launches Free Pascal compiler, 
+which compiles, assembles and links your Pascal code, creating the executable
+file in the app bundle. Since the script also echoes the compiler command
+line, you can see exactly what switches were passed to the compiler.<P>
+
+<LI>Touch Test1.app - updates the app bundle's date-time stamp.
+</UL>
+
+<B><I>Tip:</I></B> To browse the app bundle's files, right-click Test1.app in 
+the Project navigator and choose Show in Finder. In Finder, right-click the 
+bundle and choose Show Package Contents. The list of files should look like
+this:<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1-3. App bundle contents.<P>
+<IMG src="ObjP_Part1-3.jpg" hspace="10" /><P>
+
+<HR>
+
+<A name="AddingUI"></A><H2>Adding UI elements and code</H2>
+
+Click the buttons on the right side of the Xcode toolbar so they look like this:<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1-4. Xcode 4 toolbar buttons.<P>
+<IMG src="ObjP_Part1-4.jpg" hspace="10" /><P>
+
+By selecting the middle Assistant editor, you split the edit pane into two 
+panes. And by selecting the rightmost Utilities view, you display the Utilities pane 
+at the far right.<P>
+
+Now do this:<P>
+
+<UL>
+<LI>Click Test1AppDelegate.h to add it to the editor's list of recent files.
+<LI>Click MainMenu.xib to open it in the left edit pane.
+<LI>Click the MainMenu.xib's Window button in the vertical list at the left side
+of the xib edit pane.
+<LI>Click the right edit pane's little grid button and choose Test1AppDelegate.h
+from the Recent Files menu to open it.
+<LI>Make sure Object Library is selected at the bottom of the Utilities pane.
+<LI>Drag and drop a Push Button onto the Window in the xib editor.
+</UL>
+
+Xcode's non-navigator panes should now look something like the illustration
+below. Note that this is a pretty tight fit on a laptop. (Tip: You can 
+turn on code line numbering in Xcode Preferences.)<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1-5. Adding a button.<P>
+<IMG src="ObjP_Part1-5.jpg" hspace="10" /><P>
+
+In order to reference a UI control in your code, you need to add an "outlet"
+connection and then declare the control in your delegate class. If you don't
+need to reference the control in code, you can skip this part. Typically that 
+would be the case with buttons. However, for this example, we'll change the 
+button's caption in code, so we need an outlet for it.<P>
+
+As indicated in the ObjC code's comments, click the New Referencing Outlet's circle
+for the button, then drag and drop it where indicated in the ObjC code. Xcode
+will prompt you for a name - enter "button".<P>
+
+Similarly, to respond to control events, you need to add an "action" connection
+and add a receiving method for it in your delegate class.<P>
+
+Again, as indicated in the ObjC code's comments, click the selector's circle (under
+Sent Actions), then drag and drop it where indicated in the ObjC code. Xcode
+will prompt you for a name - enter "buttonClick".<P>
+
+Your ObjC code should now look like this:<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1-6. Outlet and action declarations in ObjC delegate class.<P>
+<IMG src="ObjP_Part1-6.jpg" hspace="10" /><P>
+
+Now click the App Delegate button in the xib editor's vertical list. The 
+Utilities pane should now look like the illustration below. Note how the
+outlets and action correspond to what's declared in the ObjC delegate class.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1-7. App Delegate's connections.<P>
+<IMG src="ObjP_Part1-7.jpg" hspace="10" /><P>
+
+Since we want to use the Pascal delegate class, we need to add the outlet and
+action there too. Click Test1AppDelegetaU.pas to open it in the editor and,
+following the ObjC code's comments, add code so it looks like this:<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1-8. Outlet and action declarations (and action implementation) in Pascal delegate class.<P>
+<IMG src="ObjP_Part1-8.jpg" hspace="10" /><P>
+
+<B><I>Important!</I></B> A word about Xcode's syntax highlighting: Whether it's
+a bug, an overlooked feature or just intentional, Xcode 4's syntax highlighting
+no longer works for some languages, including Pascal, even though the language
+support files are still included. The illustration above shows what editing of
+Pascal looks like in TextWrangler. When you save the file in TextWrangler, 
+changes will immediately be reflected in Xcode's editor.<P>
+
+Note that you can right-click a file in
+Project navigator and choose Open with External Editor. If the file is 
+associated with TextWrangler, it should open there (although this also appears
+to be buggy some days). In OS X, to associate a file with the application that
+should open it, select the file in Finder and choose File | Get Info (or
+press Cmd+I), then select the application in the Open with list.<P>
+
+Now run your app and click the button - its caption should change to "Clicked!".
+
+<HR>
+
+<A name="NextSteps"></A><H2>Next steps</H2>
+
+If you followed the brief tutorial above, you will have created an actual Cocoa
+app, writing only a half-dozen lines of Pascal code, all done in Xcode 4 (with the
+possible exception of using an external code editor). You should also have
+a basic feel for Xcode and its various panes and editors.<P>
+
+There's a lot more to cover, but that's for future installments.<P>
+
+<HR>
+Copyright 2011 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted March 27, 2011; last edited Feb. 25, 2013.
+<P>
+
+</BODY>
+
+</HTML>

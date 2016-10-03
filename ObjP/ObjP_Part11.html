@@ -1,0 +1,310 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2011 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 11: Using Web Services</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 11: Using Web Services</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Requirements">Requirements</A><BR>
+<A HREF="#ParsingWSDL">Parsing the WSDL File</A><BR>
+<A HREF="#Testing">Testing the Web service</A><BR>
+<A HREF="#CrossPlatform">Making the code cross-platform</A><BR>
+<P>
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+Many iOS native apps can be thought of as Web apps, although of the 
+out-of-browser variety. Look at the standard apps included with iOS: 
+Mail, Stocks, Weather, etc. - they all need an Internet connection
+to show up-to-date information. But unlike in-browser Web apps,
+they look and feel great (more responsive, better transitions) and 
+often have limited functionality even when off-line.<P>
+
+These notes describe how to add support to your iOS app for retrieving
+Internet data via a Web service using the cross-platform, open-source 
+Web Service Toolkit.<P>
+
+<HR>
+<A name="Requirements"></A><H2>Requirements</H2>
+
+<UL>
+<LI>Free Pascal compilers for i386 and ARM. Installers for FPC 2.6.2 can be
+downloaded from <A HREF="ftp://freepascal.stack.nl/pub/fpc/dist/2.6.2/i386-macosx/">here</A>.<P>
+
+<LI>Web Service Toolkit source - can be checked out with command-line SVN or 
+a Subversion frontend like <A HREF="http://www.versionsapp.com">Versions</A> or 
+<A HREF="http://www.zennaware.com">Cornerstone</A>. For example, open a Terminal 
+window, change to a directory where you want to check out the WST source,
+and enter:<P>
+
+<PRE>
+svn co https://lazarus-ccr.svn.sourceforge.net/svnroot/lazarus-ccr/wst/trunk .
+</PRE>
+
+Documentation is here:  <A HREF="http://wiki.freepascal.org/Web_Service_Toolkit">http://wiki.freepascal.org/Web_Service_Toolkit</A>
+</UL>
+
+<HR>
+<A name="ParsingWSDL"></A><H2>Parsing the WSDL file</H2>
+
+First compile the WST's <B>ws_helper</B> program. Open a Terminal window and 
+change to the ws_helper subdirectory in your WST checkout, then enter the 
+following (or put it in a script file):
+
+<PRE>
+fpc -Cirot -Fi../ -Fu../ -Fu../wst_rtti_filter -dWST_HANDLE_DOC ws_helper.pas
+</PRE>
+
+Next parse the WSDL file for the Web service you want to use. For this example,
+we'll use a WSDL file from the U.S. National Weather Service. Download file
+<B>ndfdXML.wsdl</B> from this site:<P>
+
+<A HREF="http://www.usgovxml.com/DataService.aspx?ds=NDFD">http://www.usgovxml.com/DataService.aspx?ds=NDFD</A>.<P>
+
+Parse ndfdXML.wsdl by entering the following all on one line (or put it
+in a script):<P>
+
+<PRE>
+ws_helper -uA -p -o. -fhttp_graphical_weather_gov_xml_DWMLgen_schema_DWML_xsd=ndfdDWML_schema ndfdXML.wsdl
+</PRE>
+
+For more information about the various switches used, run ws_helper without any
+switches. The one switch that might require some explanation is the -f switch. 
+It's used so that the name of one of the generated units is shortened to just 
+ndfdDWML_schema.<P>
+
+With ndfdXML.wsdl, the ws_helper parser generates these files that you'll use
+along with the WST units:<P>
+
+<PRE>
+  ndfdXML.pas
+  ndfdXML.wst
+  ndfdXML_proxy.pas
+  ndfdDWML_schema.pas
+</PRE>
+
+<HR>
+<A name="Testing"></A><H2>Testing the Web service</H2>
+
+Web Service Toolkit can be used with any of these HTTP libraries:<P>
+
+<PRE>
+  Indy
+  Synapse
+  ICS
+  FPC's HTTP client
+  Foundation framework-based HTTP client (for iOS)
+</PRE>
+
+WST includes an xxxx_http_protocol.pas file for each library that implements two 
+library-specific classes required by WST. You use the appropriate protocol unit 
+along with the units generated from the Web service's WSDL file to call the 
+Web service from your app.<P>
+
+To test on iOS, we'll use the NDFD Web service to retrieve a 5-day weather 
+forecast for 
+<A HREF="http://www.city-data.com/city/Silverton-Colorado.html">Silverton, Colorado</A>, 
+a town in the Rocky Mountains that generally has fairly 
+cool nighttime temperatures because of its elevation (9,305 feet, or about
+2,835 meters).<P>
+
+Create an iOS Pascal project in Xcode, then do the following:<P>
+
+<OL>
+<LI>Copy the four ndfd files created by ws_helper into the project's source
+folder, or add their location to FPC's unit search path with the -Fu switch
+(if you created your app with the Xcode Pascal template, you can add -Fu 
+to the FPC_COMMON build setting).<P>
+
+<LI>Download the two iOS HTTP client files 
+(<A HREF="ns_url_request.pas">ns_url_request.pas</A>
+and <A HREF="NSHelpers.pas">NSHelpers.pas</A>),
+then copy them into the project's source folder or add their location
+to FPC's unit search path with the -Fu switch.<P>
+
+<LI>Add the location of the WST checkout to FPC's unit search path 
+with the -Fu switch.<P>
+
+<LI>Add these units to your app's uses statement:<P>
+<PRE>
+SysUtils,
+DateUtils,
+ns_http_protocol,  //WST units
+soap_formatter,
+base_service_intf,
+ndfdXML,  //Web service units
+ndfdXML_proxy,
+ndfdDWML_schema
+</PRE>
+
+<LI>Add the following code to your app's startup code (for example, in 
+application_didFinishLaunchingWithOptions) or to an action receiving method
+or event handler. Note that all we're doing at 
+this point is testing the Web service, so we'll just dump the
+retrieved XML to the Xcode debug window so we can see what's returned
+by the Web service.
+<PRE>
+var
+  NdfdService : ndfdXMLPortType;
+  Latitude    : Double;
+  Longitude   : Double;
+  NumDays     : Integer;  
+  StartDate   : TDateRemotable;
+  UnitsToUse  : ndfdDWML_schema.unitType;
+begin
+  NS_RegisterHTTP_Transport;
+  try
+    NdfdService := wst_CreateInstance_ndfdXMLPortType;
+    if not Assigned(NdfdService) then
+      WriteLn('Unable to connect to NDFD Web service.')
+    else
+      begin
+      Latitude := 37.81;  //Silverton, CO's lat/long
+      Longitude := -107.66;
+      NumDays := 5;
+      StartDate := TDateRemotable.Create;
+      StartDate.AsDate := Today;
+      UnitsToUse := ndfdDWML_schema.e;  //use ndfdDWML_schema.m for metric
+      try
+        WriteLn(NdfdService.NDFDgenByDay(Latitude, Longitude, 
+                                         StartDate, NumDays, UnitsToUse, 
+                                         formatType__24_hourly));
+      finally
+        StartDate.Free;
+        end;
+      end;
+  except on E:Exception do
+    WriteLn(E.Message);
+  end;
+</PRE>
+
+<LI>Now run your app and look at the XML dumped to the debug window (if you
+don't see the debug window, choose View | Debug Area | Show Debug Area).
+You can also see the output in the Log navigator's debug log. Scroll down
+to the forecast's maximum/minimum temperatures, then check to see that they're
+close to what a reputable weather site gives (for example
+<A HREF="http://classic.wunderground.com/cgi-bin/findweather/hdfForecast?query=silverton%2Cco&searchType=WEATHER">Weather Underground</A>).
+</OL>
+
+<HR>
+<A name="CrossPlatform"></A><H2>Making the code cross-platform</H2>
+
+Since WST is cross-platform, it makes sense to write your code to be
+cross-platform too, even if you're currently interested only in iOS.
+That way you can effortlessly recycle your code if you target other
+platforms in the future. Here are three areas to focus on.<P>
+
+<H3>Separating WST-related code from the UI</H3>
+
+In the code fragment above, the WriteLn calls are only placeholders for use
+in testing. In an actual app, you would present any error message or the
+results of a Web service call in the app's user interface. But you would not
+mix non-UI code like Web service calls with UI code that does the presentation 
+of the results of those calls. Instead, you should pass back the error message 
+or results to the calling code without regard to what the calling code
+ultimately does with it - that way your non-UI code can be used in a 
+console app, Web app, DLL, etc. as well as in a desktop or mobile app, 
+regardless of how the app's user interface is implemented (it may not even
+have a user interface).<P>
+
+Naturally that means moving the WST-related code into its own unit and either
+wrapping it in a class or in a series of functions. In no case should this unit
+include VCL/LCL units like Forms, Dialogs, Controls, etc. in its uses
+statement.<P>
+
+The same goes for inputs to your WST-related code. For example, with the NDFD
+Web service, you would probably pass in the latitude and longitude rather
+than hard-wiring it the way we did for testing purposes. The NDFD Web service
+also provides methods for retrieving lat/long values for cities, zip codes,
+etc. You could wrap up these methods in a similar fashion.
+
+<H3>Supporting multiple HTTP libraries</H3>
+
+First decide what HTTP libraries you're going to use. For example, you might 
+decide like this:<P>
+
+<UL>
+<LI>With FPC, use its HTTP client for all platforms except iOS.
+<LI>With iOS, use the Foundation-based HTTP client.
+<LI>With Delphi on Windows, use Indy.
+</UL>
+
+To handle these libraries conditionally, change your uses statement so it
+includes something like this:<P>
+
+<PRE>
+{$IFDEF FPC}
+ {$IF DEFINED(IPHONESIM) OR (DEFINED(DARWIN) AND DEFINED(CPUARM))}  {iOS?}
+  ns_http_protocol,
+ {$ELSE}
+  fpc_http_protocol,
+ {$IFEND}
+{$ELSE}  {Delphi}
+  delphi_init_com,
+  indy_http_protocol,
+{$ENDIF}
+</PRE>
+
+Register the libraries conditionally in a similar fashion:<P>
+
+<PRE>
+{$IFDEF FPC}
+ {$IF DEFINED(IPHONESIM) OR (DEFINED(DARWIN) AND DEFINED(CPUARM))}
+  NS_RegisterHTTP_Transport;
+ {$ELSE}
+  FPC_RegisterHTTP_Transport;
+ {$IFEND}
+{$ELSE}
+  INDY_RegisterHTTP_Transport;
+{$ENDIF}  
+</PRE>
+
+That's all you need to do. The rest of your WST-related code will be the same 
+for all platforms.<P>
+
+<H3>Processing XML returned by the Web service</H3>
+
+Many Web services, including NDFD, return data as XML, so you'll need to 
+process this XML to find the data you need. Unfortunately the Free Pascal and
+Delphi XML units are not compatible, so you may need to write
+this code twice, once for Free Pascal and once for Delphi. For example, 
+with Free Pascal you would use the XMLRead and DOM units, with Delphi you
+would use the XMLIntf and XMLDoc units. You could also develop
+a wrapper unit for both that conditionally compiles the appropriate code
+depending on compiler used.<P>
+
+Note that the NDFD methods return XML in a string. You could write
+this string to a temporary file, passing this file name back to the calling
+code, which then passes it on to your XML processing code. You could also
+write the XML string to a stream and pass the stream object back to the 
+calling code. You can load either a file or a stream with the Free Pascal
+and Delphi XML parsers.<P>
+
+<HR>
+Copyright 2012 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted Jan. 5, 2012; last edited May 9, 2013.
+<P>
+
+</BODY>
+
+</HTML>

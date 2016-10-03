@@ -1,0 +1,466 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2011 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing with Objective Pascal - Part 10: Creating a Multi-Architecture Static Library (Pascal)</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing with Objective Pascal</H1>
+<H2>Part 10: Creating a Multi-Architecture Static Library (Pascal)</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Requirements">Requirements</A><BR>
+<A HREF="#Library Project">Creating the Library Project</A><BR>
+<A HREF="#Wrapping Class">Wrapping the Pascal Class</A><BR>
+<A HREF="#Wrapping Methods">Wrapping the Pascal Methods and Properties</A><BR>
+<A HREF="#Wrapping Tips">Wrapping Tips</A><BR>
+<A HREF="#Testing">Testing the Wrapper Class</A><BR>
+<A HREF="#Notes">Notes</A><BR>
+<P>
+
+<HR>
+
+<A name="Introduction"></A><H2>Introduction</H2>
+
+<A HREF="ObjP_Part8.html">Part 8</A> describes how to compile Objective C 
+classes into a static library that you can use in an Objective Pascal app for
+iOS. These notes describe how to create an Objective C wrapper for a Pascal class
+and compile it into a static library for use in an Objective C app for iOS.<P>
+
+When would it be appropriate to use Pascal in an Objective C app? Several
+typical scenarios suggest themselves:<P>
+
+<UL>
+<LI>You want to write your iOS app's user interface in Objective C, but some
+or all of the non-UI portion of the app in Pascal.<P>
+<LI>You need to write a portion of your app in Objective C in order to utilize 
+features of Xcode, Interface Builder or Objective C that are not available  
+or are difficult to use with Pascal (Automatic Reference Counting, Core Data, 
+Storyboard files, C blocks, etc.).<P>
+<LI>You want to use existing Pascal code in a new app where the
+choice of language for the main body of the app is not yours to make.
+</UL>
+
+<HR>
+<A name="Requirments"></A><H2>Requirements</H2>
+
+<UL>
+<LI>Xcode 4.2 or later.<P>
+
+<LI>Custom Pascal templates for Xcode, available
+<A HREF="Xcode_Templates.html">here</A>.
+Unzip and place the Objective Pascal folder below 
+/Users/yourname/Library/Developer/Xcode/Templates (you will need to create the 
+Templates folder if it doesn't exist).<P>
+
+<LI>Free Pascal 2.6.2 compilers for i386 and ARM. Installers can be
+downloaded from <A HREF="ftp://freepascal.stack.nl/pub/fpc/dist/2.6.2/i386-macosx/">here</A>.<P>
+
+<LI>iPhoneAll units compiled for both Simulator and ARM. Since the ARM object
+files (.o) included with FPC 2.6.2 contain both armv6 and armv7 code, make sure 
+you compile the iPhoneAll unit for both armv6 and armv7 using the compile-arm.sh
+script included with the framework header parser 
+<A HREF="iOS_6_Parsing_Status.html">here</A>.
+</UL>
+
+<HR>
+<A name="Library Project"></A><H2>Creating the Library Project</H2>
+
+Start by creating a project in Xcode 4 using the Objective Pascal project 
+template for a Cocoa Touch Static Library. (If you don't see Cocoa Touch
+Static Library on the Objective Pascal tab for iOS, then you don't have
+the templates installed correctly.)<P>
+
+As an example, we'll wrap the Pascal TStringList class, so enter the
+following:<P>
+
+<UL>
+<LI>Product Name - enter <B>StringList</B> here. As with other project 
+templates, what you enter here will be used to name the project folder.<P>
+
+The resulting compiled library will be named "lib" + product name + ".a". 
+For example, with StringList, the compiled library will be named 
+libStringList.a. If you plan to include more than one class in your library, 
+you'll probably want to use a more general name here. If you'll only be wrapping
+a single class, the class name could be used as the project name too.<P>
+
+<LI>Objective-C Class - enter <B>PasStringList</B> here.<P>
+
+To avoid naming conflicts, don't enter the name of your Pascal class. Instead,
+since Objective C does not use the convention of a leading "T" for class names, 
+drop the Pascal class's "T" and start with that for the ObjC class name. To 
+ensure that your class name is unique, it's a good idea to add a prefix of your 
+own like we did here.
+</UL>
+
+Once you've saved your project, take a look at what the template has 
+created for you:<P>
+
+<UL>
+<LI>A pair of Objective C files (PasStringList.h and PasStringList.m) and
+a corresponding Pascal file (PasStringListU.pas). These files define and
+implement a simple subclass of NSObject named PasStringList; you'll be adding 
+to this class below.<P>
+
+<LI>Settings for the Free Pascal compilers on the target's Build Settings 
+tab.<P>
+
+As with any Objective Pascal project for iOS, if your iPhoneAll unit's files
+are not in the expected locations, you'll need to change the path in the
+FPC_ARM_UNITS and FPC_SIM_UNITS settings.<P>
+
+You can copy your Pascal class's source files into the project folder so the 
+Pascal compiler will find them. Or you can tell the compiler where they're 
+located using the <B>-Fu</B> switch that you can add to the FPC_COMMON setting.
+For this example, we're only wrapping a runtime library class, which the
+compiler can find on its own, so we don't need to use the -Fu switch.<P>
+
+<LI>Run Script on the target's Build Phases tab. When you do a build for
+a platform, this script creates an .a (archive) file from the compiled 
+.o (object) files for the platform's architecture(s). Once you've
+successfully compiled for both the Simulator and iOS Device, the script
+will combine both platforms' .a files into a single multi-architecture .a file 
+in the top level of your project folder. This .a file is what you will link 
+into any Objective C app.
+</UL>
+
+<HR>
+<A name="Wrapping Class"></A><H2>Wrapping the Pascal Class</H2>
+
+Your wrapper class needs to declare and create an instance of 
+your Pascal class. This object is what the Pascal code will operate on. 
+(Note: This technique is sometimes referred to as <I>object composition</I>.)
+
+In our example, declare and create a TStringList object. Your code should 
+look like this, where the additions you need to make are in <B>bold</B>.
+Note that you can edit the Pascal file in an external text editor such as
+<A HREF="http://www.barebones.com/products/textwrangler/">TextWrangler</A>
+that provides Pascal syntax highlighting.<P>
+
+<PRE>
+unit PasStringListU;
+
+{$modeswitch ObjectiveC1}
+
+interface
+
+uses
+  iPhoneAll<B>, Classes</B>;
+  
+type
+  PasStringList = objcclass(NSObject)
+<B>  private
+    FStrList : TStringList;</B>
+  public
+    function init : id; override;  
+    procedure dealloc; override;
+  end;
+  
+
+implementation
+
+function PasStringList.init : id;
+begin
+  Result := inherited init;
+  if Assigned(Result) then
+    begin
+<B>    FStrList := TStringList.Create;</B>
+    end;
+end;
+
+procedure PasStringList.dealloc;
+begin
+<B>  FStrList.Free;</B>
+  inherited dealloc;
+end;
+
+end.
+</PRE>
+
+<HR>
+<A name="Wrapping Methods"></A><H2>Wrapping the Pascal Methods and Properties</H2>
+
+For each method or property in your Pascal class that you want to be able 
+to use in an ObjC app, perform the following steps:<P>
+
+<OL>
+<LI>Add a method declaration to the ObjC .h file.<P>
+<LI>Copy this method declaration to the ObjC .m file and add a dummy code block 
+to it.<P>
+<LI>Add the equivalent Pascal method to the .pas file's interface and
+implementation sections, then implement the method.
+</OL>
+
+In our example library, we'll wrap the TStringList Add, Count and Strings
+members, as follows:<P>
+
+<OL>
+<LI>Add method declarations to the PasStringList.h header file. 
+For help with ObjC class and method syntax, see 
+<A HREF=http://developer.apple.com/library/mac/#referencelibrary/GettingStarted/Learning_Objective-C_A_Primer/index.html>Apple's introduction</A>.
+
+<PRE>
+@interface PasStringList : NSObject
+- (NSInteger) add:(NSString *)s;
+- (NSInteger) count;
+- (NSString *) strings:(NSInteger)index;
+@end
+</PRE>
+
+<LI>Add methods to the PasStringList.m source file. For each method, add a code 
+block and return a dummy value to eliminate Xcode warnings. It doesn't matter 
+what value you return since the ObjC code will not be used.
+
+<PRE>
+- (NSInteger) add:(NSString *)s;
+{
+    return 0;
+}
+
+- (NSInteger) count;
+{
+    return 0;
+}
+
+- (NSString *) strings:(NSInteger)index;
+{
+    return NULL;
+}
+</PRE>
+
+<LI>Add methods to the PasStringListU.pas file. First declare the methods in
+the PasStringList wrapper class:
+
+<PRE>
+    function add(s: NSString) : NSInteger; message 'add:';
+    function count : NSInteger; message 'count';
+    function strings(index : NSInteger) : NSString; message 'strings:';
+</PRE>
+
+Then implement the methods:
+
+<PRE>
+function PasStringList.add(s: NSString) : NSInteger;
+begin
+  Result := FStrList.Add(s.UTF8String);
+end;
+
+function PasStringList.count : NSInteger;
+begin
+  Result := FStrList.Count;
+end;
+
+function PasStringList.strings(index : NSInteger) : NSString;
+begin
+  Result := NSString.stringWithUTF8String(PChar(FStrList.Strings[index]));
+end;
+</PRE>
+</OL>
+
+<HR>
+<A name="Wrapping Tips"></A><H2>Wrapping Tips</H2>
+
+<OL>
+<LI>The example's methods do not include any error checking or
+debugging code. Normally you'll want to include that sort of code while 
+developing your wrapper class and conditionally exclude it only when compiling 
+a final version of your library. Also, it's probably a good idea
+to debug your Pascal class fully before you attempt to wrap it - then
+you'll only have to deal with errors in the wrapper code, not in the
+wrapped class as well.<P>
+
+<LI>The example is a contrived one since normally you would never wrap a
+runtime library class like this. Instead, in your ObjC app you would use
+an equivalent iOS framework class (for example, NSArray or NSMutableArray).<P>
+
+<LI>To help decide what types to pass with your wrapper methods, consult
+the Foundation framework's 
+<A HREF="http://developer.apple.com/library/ios/#documentation/Cocoa/Reference/Foundation/Miscellaneous/Foundation_DataTypes/Reference/reference.html#//apple_ref/doc/uid/TP40003794">data types</A> 
+and <A HREF="http://developer.apple.com/library/ios/#documentation/Cocoa/Reference/Foundation/ObjC_classic/_index.html#//apple_ref/doc/uid/20001091">classes</A>.
+For example, many of the TStringList methods and properties take a signed
+integer parameter. <B>NSInteger</B> looks like a good candidate to use. 
+With iOS, NSInteger is declared as the C "int" type (see NSObjCRuntime.h or 
+NSObjCRuntime.inc). Checking the FPC <B>ctypes.pp</B> file, we see that "cint" is 
+the same as "cint32" which is the same as the Pascal "longint" (and "Integer") 
+type.<P>
+
+<LI>In converting to and from NSString, the Pascal code implicitly assumes
+that TStringList works with AnsiString, which is currently the case with
+Free Pascal 2.6. However, if a future version of FPC changes the TStringList
+string type to UnicodeString, this code won't work. For more flexibility
+in your code, you can use the <A HREF="NSHelpers.pas">NSHelpers unit</A>, 
+which works with a variety of Pascal string types. For this example, you
+could add NSHelpers to the uses statement and then make these substitutions:<P>
+In add: Result := FStrList.Add(NSStrToStr(s));<P>
+In strings:  Result := StrToNSStr(FStrList.Strings[index]);<P>
+
+<LI>The message string that follows each Objective Pascal method declaration is
+composed by concatenating the Objective C method signature keywords, including 
+any colons. The number of colons in the message string is equal to the number
+of parameters passed to the method.
+</OL>
+
+<HR>
+<A name="Testing"></A><H2>Testing the Wrapper Class</H2>
+
+Before testing the wrapper class, make sure you've done a Product | Clean
+and Product | Build for both platforms to ensure that all architectures
+reflect the same source code. Be sure to do this after making any 
+changes to the library source too.<P>
+
+To see what architectures are contained in the library, change to the
+StringList project folder and use the <B>file</B> command:<P>
+
+<PRE>
+  file libStringList.a
+  libStringList.a: Mach-O universal binary with 3 architectures
+  libStringList.a (for architecture armv6):	current ar archive random library
+  libStringList.a (for architecture armv7):	current ar archive random library
+  libStringList.a (for architecture i386):	current ar archive random library
+</PRE>
+
+Now create a simple Objective C app for iOS. For example, select the 
+Empty Application project template and enter the following:<P>
+
+<UL>
+<LI>Product Name - enter <B>TestStringList</B>.
+<LI>Class Prefix - enter <B>TSL</B>.
+<LI>Device Family - select <B>iPhone</B>.
+<LI>Leave the check boxes unchecked.
+</UL>
+
+Once you've saved the new project, do the following:<P>
+
+<UL>
+<LI>Set the project's iOS Deployment Target to the earliest version of iOS 
+you want to support.<P>
+
+<LI>Copy the library's header file (PasStringList.h) into the app's project
+folder and add it to the project. A simple way to do that is to select the
+yellow TestStringList in the Project navigator and choose File | Add Files.
+Navigate to and select PasStringList.h and make sure the "Copy items"
+box is checked, then click Add.<P>
+
+<LI>On the target's Build Phases tab, under Link Binary With Libraries, click
+the + button, then click the Add Other button and navigate to and select
+the libStringList.a file.<P>
+
+<LI>In TSLAppDelegate.m, below the #import directive, add this line:<P>
+
+<PRE>
+#import "PasStringList.h"
+</PRE>
+
+<LI>In TSLAppDelegate.m, add the following code just above the return 
+statement in the didFinishLaunchingWithOptions method:<P>
+
+<PRE>
+PasStringList * strList = [[PasStringList alloc] init];  //allocate and initialize list object
+[strList add:@"string 1"];  //add a string to list
+[strList add:@"string 2"];  //add another
+NSLog(@"%i", [strList count]);  //output number of strings in list
+NSLog(@"%@", [strList strings:0]);  //output first string
+NSLog(@"%@", [strList strings:1]);  //output second string
+[strList release];  //free list object
+</PRE>
+
+Normally you would not add code like this to didFinishLaunchingWithOptions,
+but for this simple test app we'll dispense with a normal user interface and
+just output everything to the debug window.<P>
+
+Note that if you had checked the Use Automatic Reference Counting box when
+you created this test project, you would need to omit the strList release call
+since it will be added for you automatically at compile time (more info
+<A HREF="http://developer.apple.com/library/ios/#releasenotes/General/WhatsNewIniPhoneOS/Articles/iOS5.html#//apple_ref/doc/uid/TP30915195-SW4">here</A>).
+</UL>
+
+Now select the Simulator scheme and choose Product | Run to compile and run the
+app. If you don't see the debug window, choose View | Debug Area | Show
+Debug Area. You should now see debug output that looks like this:<P>
+
+<PRE>
+  2011-12-28 18:28:22.296 TestStringList[3108:207] 2
+  2011-12-28 18:28:22.301 TestStringList[3108:207] string 1
+  2011-12-28 18:28:22.302 TestStringList[3108:207] string 2
+</PRE>
+
+To complete your testing, connect an iOS device, then compile and run the 
+app there too.<P>
+
+<HR>
+<A name="Notes"></A><H2>Notes</H2>
+
+<OL>
+<LI>How does all this work? If you look in the library project's main Pascal
+file (under Supporting Files), you'll see that it's actually
+a library, not a program. Normally the library keyword is used for creating
+dynamic libraries (.dylib), not static libraries (.a), but in this case
+we're just using it as a way to "collect" all of the dependent object
+files required by the wrapper class.<P>
+
+If you look at the library project's FPC_COMMON build setting, you'll see that
+it includes the -Cn switch, which causes the compiler to skip the link
+stage, leaving behind file <B>link.res</B>, which includes a list of object 
+files that the linker would normally link into your binary. Furthermore, if you 
+look at the project's run script, you'll see that this list of object files is 
+extracted from link.res and fed to <B>libtool</B>, which creates the archive 
+(.a) for a single architecture. When compiling for an iOS device, libtool also
+combines both the armv6 and armv7 archives into a two-architecture archive.<P>
+
+The run script's final step is to check that both platforms' archives exist and,
+if so, combines them into a three-architecture archive in your library project's 
+folder.<P>
+
+<LI>If you open link.res in a text editor, you'll see that the list of object
+files is a long one. As a result, the archive file can be quite large since
+it includes all of these .o files for three different architectures and at
+least a couple of these files (system.o, sysutils.o) are fairly large. However,
+when Xcode compiles an ObjC app for an iOS device, it includes the 
+-dead_strip switch, which causes the linker to remove unused functions and
+data, thus reducing the size of the app's binary considerably.<P>
+
+<LI>If you inspect the build log after compiling for an iOS device, you may
+see one or more warnings like this:<P>
+
+<PRE>
+ld: warning: 32-bit absolute address out of range
+</PRE>
+
+This is the result of an apparently harmless linker bug that is discussed 
+<A HREF="http://bugs.freepascal.org/view.php?id=20879">here</A>.<P>
+
+<LI>You can put multiple wrapper classes in the same library. With the
+iOS system frameworks, the convention appears to be to define only one
+class per .h file and you may want to adhere to that convention as well. 
+If so, just add a set of .h/.m/.pas files for each class, then add the class's
+Pascal unit to the uses statement in the library project's main file (under 
+Supporting Files).<P>
+
+<LI>If you need to distribute your library for someone else to use, be sure
+to include both the archive file (for example, libStringList.a) and its header
+file(s) (for example, StringList.h).<P>
+</OL>
+
+<HR>
+Copyright 2011 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted Dec. 28, 2011; last edited May 9, 2013.
+<P>
+
+</BODY>
+
+</HTML>
