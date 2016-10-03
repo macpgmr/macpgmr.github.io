@@ -1,0 +1,729 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2015 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Pascal Dynamic Libraries: More Than You Want To Know, Part 3</TITLE>
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<BODY>
+
+<CENTER>
+<H1>Pascal Dynamic Libraries: More Than You Want To Know</H1>
+<H2>Part 3: Pascal for GIS</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#WhatsIncluded">What's Included</A><BR>
+<A HREF="#SettingUp">Setting Up</A><BR>
+<A HREF="#GDAL">Testing the GDAL unit</A><BR>
+<A HREF="#WebMaps">SwiftCast: Using a Pascal library and Bing Maps in a Swift app</A><BR>
+<A HREF="#DotSpatial">AspCast: Using a Pascal library in a DotSpatial ASP.NET Web app</A><BR>
+<A HREF="#QGIS">PyCast: Using a Pascal module with a Python plugin for QGIS</A><BR>
+<A HREF="#P4G_Ctrls">PasCast: Using a Pascal library with Lazarus GIS controls</A><BR>
+<A HREF="#qooxdoo">QxCast: Using a Pascal library and OpenStreetMap in a qooxdoo Mobile Web app</A><BR>
+<A HREF="#Todo">Future topics and to-do list</A><BR>
+<P>
+
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+These notes describe the current status of the Pascal for GIS toolkit. They 
+assume that you know something about GIS. If you're just starting out with GIS,
+you may find that browsing an online resource like this will be helpful:<P>
+
+<A HREF="http://education.nationalgeographic.com/education/encyclopedia/geographic-information-system-gis/?ar_a=1">GIS (geographic information system)</A><P>
+
+Pascal has never been relevant in the world of GIS; nor is that situation likely
+to change. Historically the primary language of GIS has been
+C++ for the low-level libraries and the GIS application itself, supplemented
+by Python for writing scripts that utilize the libraries and for developing 
+plugins that extend the GIS app. In recent years, C# has emerged as a language 
+for doing both the low- and high-level stuff with the same language.<P>
+
+Nevertheless, that doesn't mean you can't use Pascal with GIS. Here are a few
+examples of where Pascal might make sense:<P>
+
+<UL>
+  <LI>A Pascal console app that uses a geoprocessing library. Or add this
+      capability to an existing Pascal app.
+  <LI>A Pascal library that can be called from a .NET/Mono GIS.
+  <LI>A Pascal module that can be called from a Python plugin for a GIS.
+  <LI>A Swift app that uses Apple's Map Kit framework and a Pascal
+      library on OS X.
+  <LI>An Objective Pascal app that displays a map in a WebView
+      browser control on OS X.
+</UL>
+
+Typically you would use Pascal for parts of these tasks to take advantage of existing
+Pascal code that you don't want to rewrite in one or more other languages. Note that if you 
+put your Pascal code into a compiled library, you can use it with code written 
+in virtually any language (C, C#, Python, even Swift), meaning you only have 
+to write it once to use with multiple GIS tools.<P>
+
+
+<HR>
+<A name="WhatsIncluded"></A><H2>What's Included</H2>
+
+The Pascal for GIS toolkit includes units and example code for working
+with several of the GIS tools listed below. The examples range from do-it-yourself 
+without mapping (testgdal), to a simple map with basic pan and zoom (SwiftCast
+and QxCast), to a clickable but read-only map (AspCast), to a clickable 
+read-write map (PyCast and PasCast). The primary focus is Mac OS X, but several 
+of the examples can be tested on Windows and Linux too. The Free Pascal compiler 
+is assumed throughout, but Delphi can generally be used as well on Windows.<P>
+
+<TABLE BORDER=1 CELLPADDING=3>
+
+<TR VALIGN=TOP>
+<TH>GIS library, app or service</TH>
+<TH>URL</TH>
+<TH>Description</TH>
+<TH>Version tested</TH>
+<TH>Pros</TH>
+<TH>Cons</TH>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>GDAL</TD>
+<TD><A HREF="http://www.gdal.org/">www.gdal.org</A></TD>
+<TD>Geospatial Data Abstraction Library; reads and writes virtually any format
+    raster or vector file.</TD>
+<TD>1.11</TD>
+<TD>Windows, OS X, Linux; well-documented; includes many useful command-line
+    utilities; most open-source GISs include or depend on this library; X/MIT license.</TD>
+<TD>Might be a bit bulky to include with your own app; stable version is
+    out-of-date with some Linux releases.</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>SAGA GIS</TD>
+<TD><A HREF="http://sourceforge.net/projects/saga-gis/">sourceforge.net/projects/saga-gis</A></TD>
+<TD>Great number-crunching GIS with some highly specialized modules.</TD>
+<TD></TD>
+<TD>Windows, OS X, Linux; script or shell to SAGA's command-line program to do 
+    just about anything the UI can do; uses its own raster file format that can 
+    be directly read and written by Pascal; includes GDAL; LGPL license for libraries.</TD>
+<TD>Includes clumsy desktop GIS based on wxWidgets; requires wxWidgets even
+    for command-line program; poorly documented.</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>DotSpatial</TD>
+<TD><A HREF="http://dotspatial.codeplex.com/">dotspatial.codeplex.com</A></TD>
+<TD>.NET assemblies for building a Windows.Forms-based desktop GIS or an ASP.NET Web app.</TD>
+<TD>1.7 trunk</TD>
+<TD>Windows, OS X, Linux; full download includes
+GDAL binaries for Windows; has start of Cocoa map controls using MonoMac; 
+LGPL license.</TD>
+<TD>Windows.Forms-based UI works best only on Windows; although 100% C#, some
+plugins depend on native libraries (eg, GDAL).</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>QGIS</TD>
+<TD><A HREF="http://qgis.org/">qgis.org</A></TD>
+<TD>Popular GIS that's great for ad hoc use.</TD>
+<TD>2.8</TD>
+<TD>Windows, OS X, Linux; easily extended with Python plugins; Qt-based
+    GIS interface looks good on all platforms; includes Qt, GDAL, SAGA and,
+    on Windows, Python.</TD>
+<TD>GPL license for libraries, meaning any QGIS plugin you write must also be GPL;
+    enormous installation footprint; documentation not always up-to-date.</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>Map Kit framework</TD>
+<TD>References for <A HREF="https://developer.apple.com/library/mac/documentation/MapKit/Reference/MapKit_Framework_Reference/_index.html">OS X</A>
+    and <A HREF="https://developer.apple.com/library/ios/documentation/MapKit/Reference/MapKit_Framework_Reference/_index.html">iOS</A></TD>
+<TD>Apple's embeddable mapping interface for OS X and iOS.</TD>
+<TD></TD>
+<TD>Provides same look and feel as Apple's Maps app; now a standard framework 
+    on both iOS and OS X; no longer depends on Google map services; well-documented.</TD>
+<TD>Only available on Apple platforms; requires enrollment in 
+Mac Developer Program; not really a GIS per se.</TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>Google Maps, Bing Maps, Apple Maps, OpenStreetMap</TD>
+<TD><A HREF="https://www.google.com/maps">https://www.google.com/maps</A><BR>
+<A HREF="http://www.bing.com/maps">http://www.bing.com/maps</A><BR>
+<A HREF="http://www.openstreetmap.org">http://www.openstreetmap.org</A></TD>
+<TD>Services for supplying aerial imagery and other GIS layers for Web pages
+and Internet-aware GIS apps.</TD>
+<TD>Bing 6.2,<BR>OpenLayers 2.13</TD>
+<TD>Can be used with any Web browser app or control; good way of eliminating need 
+for local copies of aerial photos for a GIS; handy for simple mapping.</TD>
+<TD>Unless imagery cached, requires Internet connection; may be some 
+restrictions on use in an app; not really a GIS per se.</TD>
+</TR>
+
+</TABLE><BR>
+
+
+<HR>
+<A name="SettingUp"></A><H2>Setting Up</H2>
+
+<OL>
+<LI><B>Free Pascal compiler</B><P>
+
+Install the latest stable version.<P>
+
+<A HREF="http://freepascal.org">freepascal.org</A>
+
+<LI><B>Pascal for GIS source code</B><P>
+
+All example code mentioned in this article is available here:
+
+<A HREF="p4g.zip">p4g.zip</A><P>
+
+If you haven't already done so, you'll probably want to review 
+<A HREF="PascalDynLibs.html">Part 1</A> and <A HREF="PascalDynLibs_2.html">Part 2</A>
+of the Pascal Dynamic Libraries articles, which explain the library-related code.
+
+<LI><B>GIS libraries and apps</B><P>
+
+Install the GIS libraries and apps listed in the table above that you're interested in.<P>
+
+<B><I>Tip:</I></B> If you install QGIS, you also get the GDAL library,
+the SAGA command-line program and libraries, and Python (the latter Windows-only; 
+OS X and Linux already have Python installed).
+
+<LI><B>Sample data</B><P>
+
+This toolkit does not include sample data except for what's included with the
+examples. If you need more, download the classic Spearfish dataset from here:<P>
+
+<A HREF="http://grass.osgeo.org/download/sample-data/">grass.osgeo.org/download/sample-data</A><P>
+
+<B><I>Tip:</I></B> Use this Web site to zoom in on any location in the USA and
+clip out and download GIS layers for up to 10,000 acres. Included in the
+downloaded zip file will be soil and watershed shapefiles (vector data)
+as well as an elevation data file, aerial photo and topographic map (raster data):<P>
+
+<A HREF="http://clipper.missouri.edu/index.asp">clipper.missouri.edu/index.asp</A>
+
+</OL>
+
+
+<HR>
+<A name="GDAL"></A><H2>Testing the GDAL unit</H2>
+
+The GDAL library has a C interface, so you'll need to parse GDAL's
+header files (.h) before you can use GDAL with Pascal. Some of this has already
+been done for you and is included as the GDAL unit in the Pascal for GIS
+source.<P>
+
+<H3>Obtaining the GDAL library</H3>
+
+To obtain the GDAL library on Windows, just install SAGA GIS, DotSpatial or
+QGIS as these all include GDAL. You can also download GDAL from here:<P>
+
+<A HREF="http://www.gisinternals.com">http://www.gisinternals.com</A><P>
+
+To obtain the GDAL library on OS X, there are two options:<P>
+<OL>
+<LI>Download the "GDAL Complete" .dmg from here:<P>
+    <A HREF="http://www.kyngchaos.com/software/frameworks">http://www.kyngchaos.com/software/frameworks</A><P>
+    This .dmg installs GDAL and several other frameworks (PROJ, GEOS, etc.)
+    into /Library/Frameworks.
+    Note that these frameworks are required for QGIS on OS X and can also be used
+    with SAGA GIS and DotSpatial on OS X. Note that the frameworks
+    are all universal, meaning they can be used with both 32- and 64-bit apps.
+
+<LI>Build GDAL yourself.<P>
+  <UL>
+  <LI>Download the GDAL .tar.gz file from here:<P>
+      <A HREF="http://www.gdal.org">http://www.gdal.org</A>
+  <LI>Unzip in its own directory, then in that directory enter:<P>
+<PRE>
+  ./configure
+  make
+</PRE><P>
+      This creates a 64-bit libgdal.1.dylib (and libgdal.dylib symlink) in .libs
+      subdir, ready for installing (optional) in /usr/local/lib with:<P>
+<PRE>
+  make install
+</PRE>
+  <LI>However, since Mono is currently 32-bit only on Mac, you can do this instead:<P>
+<PRE>
+  ./configure CFLAGS="-Os -arch i386 -arch x86_64" CXXFLAGS="-Os -arch i386 -arch x86_64" LDFLAGS="-arch i386 -arch x86_64"
+  make clean
+  make
+</PRE>
+      This creates a universal library. If you need only a 32-bit library,
+      just omit the x86_64 switches.
+  </UL><P>
+
+Build the PROJ library too (if you need to reproject spatial data).<P>
+  <UL>
+  <LI>Download the PROJ .tar.gz file from here:<P>
+      <A HREF="http://trac.osgeo.org/proj/">http://trac.osgeo.org/proj</A>
+  <LI>Compile the PROJ library the same as GDAL above.
+</OL>
+
+<H3>Testing the GDAL library</H3>
+
+To test the GDAL unit with the GDAL library, change to the directory where
+the GDAL unit source files and <B>testgdal.pas</B> are located. This simple
+console app can be used to display a few bits of information about virtually
+any vector or raster data file.<P>
+
+Note that depending on what version of the GDAL library you want to test,
+you may need to edit GDAL.pas and specify the library name 
+to use with Windows if it's different from the default (gdal111.dll).<P>
+
+To test the app with the GDAL library on OS X, do one of the following:<P>
+
+<OL>
+<LI>If you built and installed GDAL to /usr/local/lib as described above,
+you don't need to do anything.<P>
+<LI>If you built GDAL above, but did <I>not</I> install it, copy libgdal.1.dylib
+to where testgdal.pas is located, then enter this:
+<PRE>
+  mv libgdal.1.dylib libgdal.dylib
+  install_name_tool libgdal.dylib -id ./libgdal.dylib
+</PRE>
+<LI>If you installed the GDAL framework and want to use it instead of the library, 
+compile with the -dGDAL_FRAMEWORK switch to link against the GDAL framework 
+instead of the library.
+</OL>
+
+Now compile the testgdal app:
+<PRE>
+  ppc386 testgdal
+</PRE>
+
+Note that if you have only the 64-bit GDAL library, you'll need 
+to compile testgdal.pas with ppcx64 (OS X) or ppcrossx64 (Windows).<P>
+
+On OS X, you can see what the executable is linked against as follows:<P>
+
+<PRE>
+  otool -L testgdal
+</PRE>
+
+To test the app with the GDAL library on Windows, you'll need a path to the GDAL 
+library. For example, to use QGIS's GDAL library with the test app, enter this 
+in a batch file:<P>
+<PRE>
+  setlocal
+  set PATH=C:\Program Files (x86)\QGIS\bin;%PATH%
+  testgdal %1%
+</PRE>
+
+Run the app and specify a vector or raster file to examine. Examples:<P>
+
+<PRE>
+  On OS X:     ./testgdal someshapefile.shp
+  On Windows:  testgdal.bat somegridfile.asc
+</PRE>
+
+<H3>Testing the GDAL and PROJ libraries</H3>
+
+If the GDAL library can find the PROJ library, you can also use the GDAL
+transformation (projection) functions. The <B>testshapes.pas</B> console app is
+supplied for testing these functions.<P>
+
+On OS X, compile the testshapes app like this:<P>
+
+<PRE>
+  ppc386 -Fu../ndfd testshapes
+</PRE>
+
+To use the GDAL and PROJ frameworks instead of the libraries, include the
+-dGDAL_FRAMEWORK switch.<P>
+
+On Windows, compile the testshapes app like this:<P>
+
+<PRE>
+  ppc386 -Fu..\ndfd testshapes
+</PRE>
+
+When run, testshapes will create the locations shapefile used in the PasCast
+example below.<P>
+
+<HR>
+<A name="WebMaps"></A><H2>SwiftCast: Using a Pascal library and Bing Maps in a Swift app</H2>
+
+SwiftCast is an example app for OS X that shows how to:<P>
+<UL>
+  <LI>Use a Pascal library in a Swift app. Specifically it uses the ndfd library
+      and its Swift wrapper class from <A HREF="PascalDynLibs_2.html">Part 2</A>
+      of Pascal Dynamic Libraries to retrieve weather forecast data.
+  <LI>Use a WebView control in a Swift app as an embedded Web browser.
+  <LI>Load a local HTML file containing a bit of JavaScript
+      that displays a map of forecast data using Bing Maps.
+</UL>
+
+A screenshot of SwiftCast is here: <A HREF="SwiftCast.jpg">SwiftCast.jpg</A><P>
+
+To try out SwiftCast, you have two options:
+<UL>
+  <LI>Open SwiftCast.xcodeproj in Xcode and choose Product | Run. Make sure 
+      you've compiled the ndfd library beforehand.
+  <LI>Download SwiftCast.dmg from here: <A HREF="SwiftCast.dmg">SwiftCast.dmg</A><BR>
+      This .dmg has not been codesigned, so right-click on SwiftCast.dmg and 
+      choose Open rather than double-clicking it.
+</UL>
+
+A screenshot of the SwiftCast project in Xcode is here: 
+<A HREF="SwiftCast-Xcode.jpg">SwiftCast-Xcode.jpg</A><P>
+
+Notes on SwiftCast:<P>
+<OL>
+  <LI>SwiftCast loads file <B>viewForecast.bing.6.2.html</B> into its WebView
+      control. This file's JavaScript code uses version 6.2 of Bing Maps. 
+      One drawback to version 6.2 is
+      that it doesn't appear to have a way to label points on the map directly.
+      Instead, you position the mouse over a location's pushpin and its label
+      will pop up. Bing 7.0 has a way to label
+      points directly, but 7.0 requires signing up for a developer account
+      to use it. Google Maps could also be used. To use a different mapping 
+      service, just replace JavaScript functions showMap and showLocation,
+      which look like this for Bing 6.2:
+      <pre><code class="javascript">    function showMap(lat, lon) {
+      map = new VEMap('map');
+      map.LoadMap(new VELatLong(lat, lon), 10, VEMapStyle.Road, false);
+    }
+
+    function showLocation(lat, lon, location, forecast) {
+      var point = new VELatLong(lat, lon);
+      var pin = new VEShape(VEShapeType.Pushpin, point);
+      pin.SetTitle(location);
+      pin.SetDescription(forecast);
+      map.AddShape(pin);
+    }</code></pre>
+
+  <LI>SwiftCast loads a local copy of an HTML file into its WebView control,
+      looking for it in its Resources folder using this bit of code:
+      <pre><code class="bash">    let htmlPath = NSBundle.mainBundle().resourcePath! + "/viewForecast.bing.6.2.html"</code></pre>
+      But there's no reason why this file couldn't be loaded by specifying an
+      http:// location. That would allow you to update the HTML that's loaded
+      without needing to update the app itself.<P>
+
+  <LI>Several of the default menus that Xcode's template adds to a new app
+      are not relevant to a simple app like SwiftCast. However, these menus
+      have been left alone in case someone wants to extend SwiftCast,
+      for example, to support loading a file containing locations and lat/lon 
+      coordinates rather than just using the app's hard-wired locations.
+</OL>
+
+Adding the ndfd library to an Xcode Swift project is fairly straightforward:<P>
+<UL>
+  <LI>File | Add Files and add <B>libndfd.dylib</B> (previously compiled elsewhere),
+      but don't let Xcode copy the .dylib into the project.
+  <LI>File | Add Files and add the library's header file (<B>ndfd.h</B>) and Swift
+      wrapper class (<B>NdfdLib.swift</B>) to the project and let Xcode copy the files
+      too.
+  <LI>If the project does not have a bridging header file, use 
+      File | New | File | OS X Source | Header File and create it 
+      (<B>Bridging-Header.h</B>).
+  <LI>Edit the bridging header file and add ndfd.h to it (#include "ndfd.h").
+  <LI>In Build Settings, under SWIFT_OBJC_BRIDGING_HEADER, specify
+      SwiftCast/Bridging-Header.h.
+  <LI>In Build Phases, under Link Binary With Libraries, add libndfd.dylib.
+  <LI>In Build Phases, under Copy Bundle Resources, add libndfd.dylib.
+  <LI>In Build Phases, add a Run Script that fixes up the app bundle's
+      libndfd.dylib and the executable that loads it:
+      <pre>install_name_tool $TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/libndfd.dylib -id @executable_path/../Resources/libndfd.dylib
+install_name_tool $TARGET_BUILD_DIR/$EXECUTABLE_PATH -change ./libndfd.dylib @executable_path/../Resources/libndfd.dylib</pre>
+</UL>
+
+
+<HR>
+<A name="DotSpatial"></A><H2>AspCast: Using a Pascal library in a DotSpatial ASP.NET Web app</H2>
+
+AspCast is an example app for .NET and Mono that shows how to:<P>
+<UL>
+  <LI>Use a Pascal library in an ASP.NET Web app. Specifically it uses the 
+      ndfd library and its C# wrapper class from <A HREF="PascalDynLibs_2.html">Part 2</A>
+      of Pascal Dynamic Libraries to retrieve weather forecast data.
+  <LI>Use the DotSpatial assemblies to add GIS functionality to the Web app.
+  <LI>Display a clickable map using Bing Maps; clicking on the map displays
+      the forecast for that point; pan and zoom to any place in the U.S.
+</UL>
+
+A screenshot of AspCast is here: <A HREF="AspCast.jpg">AspCast.jpg</A><P>
+
+To try out AspCast, you have several options. Be sure to copy the required
+DotSpatial assemblies, the ndfd native library and its interop assembly
+as described below.
+<UL>
+  <LI>Open AspCast.sln in Xamarin Studio on Mac or Windows and choose 
+      Run | Run With | Mono Soft Debugger for ASP.NET.
+  <LI>If you have Visual Studio, you can also open and run AspCast.sln there.
+  <LI>The MonoDevelop IDE should also work (eg, on Linux), but this 
+      has not been tested.
+  <LI>If you don't have any of these IDEs installed, just compile AspCast from
+      the command line (enter this one level up from the refs subfolder):<P>
+<pre><code>xbuild</code></pre>
+      (With .NET on Windows, use msbuild.)
+  <LI>Note that once you've compiled AspCast, you can also start it from the
+      command line with Mono's XSP server (enter this one level up from the 
+      refs subfolder):<P>
+<pre><code>xsp4</code></pre>
+Then enter this in a browser:<P>
+<pre><code>http://localhost:8080</code></pre>
+</UL><P>
+
+A screenshot of the AspCast project in Xamarin Studio is here: 
+<A HREF="AspCast-XamarinStudio.jpg">AspCast-XamarinStudio.jpg</A><P>
+
+Notes on AspCast:<P>
+
+<OL>
+  <LI>ASP.NET apps sometimes get shut down immediately when run with 
+      Xamarin Studio's Mono Web server on Windows. If this happens,
+      try running AspCast with a different Web server, such as IIS Express.<P>
+  <LI>AspCast works fairly well in Safari on an iPad too, with the 
+      exception of panning the map, which conflicts with normal scrolling
+      within the browser.
+</OL>
+
+Creating a DotSpatial ASP.NET app is fairly straightforward:<P>
+<UL>
+  <LI>In Xamarin Studio, choose File | New | Solution, then under C#, select 
+      ASP.NET and ASP.NET Project.
+  <LI>You can immediately test this simple app by choosing Run | Run With |
+      Mono Soft Debugger for ASP.NET. This will start the app and launch a
+      Web browser. When done, choose Run | Stop.
+  <LI>Now choose File | New | File and, under Misc, select Assembly Information.
+      This will create a file where you can enter version and copyright info.
+  <LI>If you'll be adding any custom buttons to the app's eventual toolbar, 
+      create a subfolder named Images (or something similar).
+  <LI>If you'll be displaying any shapefiles in the app, create a subfolder
+      named Layers (or something similar).
+  <LI>Create a subfolder named refs (or something similar). Copy the DotSpatial 
+      assemblies to the refs subfolder. Where to get these assemblies?
+      For convenience so you don't have to build them yourself, you can
+      download pre-built assemblies from here: 
+      <A HREF="DotSpatial_p4g.zip">DotSpatial_p4g.zip</A>
+  <LI>If you'll be using any "unmanaged" native libraries, copy them into the
+      main folder (where Default.aspx is) on OS X or into the bin subfolder
+      on Windows. For example, copy the ndfd library (previously compiled elsewhere).
+  <LI>Copy any native libraries' interop assemblies into the refs folder. 
+      For example, copy Ndfd.Interop.dll (previously compiled elsewhere).
+  <LI>Create ImageHandler.ashx and ImageHandler.ashx.cs files for the app.
+      These are simple files; look at AspCast's for examples. Be sure to 
+      include them in the project by right-clicking on the Solution panel
+      and choosing Add | Add Files.
+  <LI>Add legend, toolbar and map controls to Default.aspx and corresponding
+      code to Default.aspx.cs. See AspCast for example code.
+</UL>
+
+
+<HR>
+<A name="QGIS"></A><H2>PyCast: Using a Pascal module with a Python plugin for QGIS</H2>
+
+PyCast is an example plugin for QGIS that shows how to:<P>
+<UL>
+  <LI>Use a Pascal library with Python. Specifically it uses the ndfd library
+      and its compiled module and Python wrapper class from <A HREF="PascalDynLibs_2.html">Part 2</A> of 
+      Pascal Dynamic Libraries to retrieve weather forecast data.
+  <LI>Display forecasts for points in a layer in the supplied PyCast.qgs project;
+      pan and zoom to any place in the U.S. and add points to this layer.
+  <LI>Display a background map with the QGIS OpenLayers plugin; the PyCast.qgs
+      project uses Apple Maps.
+</UL>
+
+A screenshot of PyCast is here: <A HREF="PyCast.jpg">PyCast.jpg</A><P>
+
+To try out the PyCast plugin, follow these steps to add it to QGIS:<P>
+<UL>
+  <LI>Install the OpenLayers plugin. In QGIS, choose Plugins | Manage and
+      Install Plugins.<P>
+  <LI>Copy the PyCast folder to QGIS's plugins folder. On OS X, plugins are
+      installed under:<P>
+      ~/.qgis2/python/plugins<P>
+      On Windows, QGIS plugins are installed under:<P>
+      \Users\yourname\.qgis2\python\plugins
+  <LI>Compile the ndfd library and its Pascal module, then copy these two
+      binary files into the PyCast folder (that you created under plugins).
+      QGIS uses Python 2.7.x, so don't use the Python 3 module; also, be sure
+      to copy the 32-bit library and module with 32-bit QGIS or the 64-bit
+      library and module with 64-bit QGIS (on Mac, QGIS is only 64-bit, so 
+      both the 64-bit and "fat" binaries will work).<P>
+  <LI>On OS X, fix up the library and module so the module can find and load
+      the library:
+      <PRE>install_name_tool libndfd.dylib -id @loader_path/libndfd.dylib
+install_name_tool ndfdmod.so -change ./libndfd.dylib @loader_path/libndfd.dylib</PRE>
+  <LI>In QGIS, choose Plugins | Manage and Install Plugins, then
+      check the PyCast plugin to enable it.<P>
+  <LI>Choose Web | PyCast to see the PyCast commands; there's also a
+      PyCast button on the toolbar.<P>
+  <LI>Finally, in QGIS, choose Project | Open and select the PyCast.qgs project 
+      in the PyCast_Example folder. Now follow the PyCast help.
+</UL>
+
+A screenshot of a PyCast source file in TextWrangler is here: 
+<A HREF="PyCast-TextWrangler.jpg">PyCast-TextWrangler.jpg</A><P>
+
+Notes on PyCast:<P>
+<OL>
+  <LI>Typically QGIS plugins are installed in a submenu under one of the standard 
+      program menus, so the PyCast plugin is installed under the Web menu
+      along with the OpenLayers plugin.<P>
+
+  <LI>QGIS plugins are usually downloaded and installed automatically via 
+      the plugin manager, but since PyCast requires two binary files that 
+      you need to build, it isn't currently distributed that way.<P>
+      
+  <LI>Sometimes OpenLayers maps don't fully download and a few tiles may be
+      blank. You can usually remedy this by choosing View | Refresh or
+      panning the map a little bit to force the tiles to be reloaded.
+</OL>
+
+Creating a Python plugin for QGIS involves several tools. Since the Python
+source for all plugins is included, you might find it easier just to adapt
+an existing plugin or learn how to write a plugin by reviewing the code of
+PyCast or other plugins. However, you can also follow these steps to create 
+a simple plugin that will be installed under the Plugins menu:<P>
+
+<UL>
+  <LI>Install the Plugin Builder plugin in QGIS and use it to create the 
+      rudiments of a new plugin.
+  <LI>Use Qt Designer to design a dialog box for your plugin.
+  <LI>Convert the .ui file created by Qt Designer to Python code with the 
+      pyuic4 utility included with QGIS. See the example comp-ui.sh script 
+      included with PyCast.
+  <LI>Convert icons and other resources to Python code with the pyrcc4 utility
+      included with QGIS. See the example comp-qrc.sh script included with PyCast.
+  <LI>Use a text editor or Python IDE to add code to your plugin and edit
+      the plugin's metadata.txt file.
+</UL>
+
+QGIS API documentation is here: <A HREF="http://www.qgis.org/en/docs/index.html">http://www.qgis.org/en/docs/index.html</A><P>
+
+
+<HR>
+<A name="P4G_Ctrls"></A><H2>PasCast: Using a Pascal library with Lazarus GIS controls</H2>
+
+PasCast is a cross-platform example app for Lazarus that shows how to:<P>
+<UL>
+  <LI>Use a Pascal library in a Lazarus LCL app. Specifically it uses the 
+      ndfd library and its Pascal wrapper class from Part 2 of Pascal Dynamic 
+      Libraries to retrieve weather forecast data. 
+  <LI>Use the P4G_Ctrls GIS controls for Lazarus.
+  <LI>Display a clickable map of image and vector layers.
+</UL>
+
+A screenshot of PasCast is here: <A HREF="PasCast.jpg">PasCast.jpg</A><P>
+
+To try out PasCast, you have two options:
+<UL>
+  <LI>Open pascast.lpi in Lazarus and compile it. Make sure you've first followed
+      the steps in the PasCast folder's <B>ReadMe.txt</B> file to set up PasCast's
+      dependencies in Lazarus.
+  <LI>With OS X, you can download PasCast.dmg from here: <A HREF="PasCast.dmg">PasCast.dmg</A><BR>
+      This .dmg has not been codesigned, so right-click on PasCast.dmg and 
+      choose Open rather than double-clicking it.
+</UL>
+
+A screenshot of the PasCast project in Lazarus is here: 
+<A HREF="PasCast-Lazarus.jpg">PasCast-Lazarus.jpg</A><P>
+
+Notes on PasCast:<P>
+<OL>
+  <LI>The downloadable PasCast.dmg's app bundle includes all of the layer files 
+      PasCast needs, as well as its own copies of the GDAL, PROJ and ndfd 
+      libraries, so you don't need to install anything else to run it.<P>
+  <LI>After compiling PasCast, Lazarus will attempt to run the fixlazbundle.sh
+      script to fix up the PasCast.app bundle on OS X. This script is not
+      needed on other platforms and will fail with an error message in the
+      build log. You can ignore this message on other platforms.<P>
+  <LI>PasCast displays a map of an area of southwestern Colorado. While the
+      area is not large geographically as weather forecasts go, it does have
+      dramatic changes in elevation (>1000m). When you click around on the map
+      to get a forecast, you would expect the forecast to change, but it 
+      mostly doesn't, suggesting that the NDFD forecast model does not fully
+      account for local elevation differences.
+</OL>
+
+Using the P4G_Ctrls GIS controls with Lazarus is fairly straightforward:<P>
+<UL>
+  <LI>Install the GDAL framework (OS X) or install the GDAL and PROJ 
+      libraries (Windows and Linux) as described above.
+  <LI>Compile the <B>gdal_pkg.lpk</B> runtime package.
+  <LI>Compile and install the <B>p4g_ctrls.lpk</B> design/runtime package.<P>
+      <I>Warning:</I> Installing the p4g_ctrls package will link Lazarus to GDAL, 
+      meaning you will need the GDAL framework installed (OS X) or the GDAL 
+      library somewhere on the path in order to start Lazarus.
+  <LI>In Lazarus, add a TP4G_Legend control to your form and set the control's
+      Align property to alLeft.
+  <LI>Add a TSplitter control to the form.
+  <LI>Add a TP4G_Map control to the form and set the control's Align property
+      to alClient.
+  <LI>Programmatically add image and vector layers to the map. See PasCast 
+      for example code.
+  <LI>Remember that the p4g_ctrls controls are just prototypes, meaning they're
+      incomplete and subject to change.
+</UL>
+
+Lazarus documentation is here: <A HREF="http://www.lazarus-ide.org/">http://www.lazarus-ide.org</A><P>
+
+
+<HR>
+<A name="qooxdoo"></A><H2>QxCast: Using a Pascal library and OpenStreetMap in a qooxdoo Mobile Web app</H2>
+
+QxCast is a mobile Web app that shows how to:<P>
+<UL>
+  <LI>Use a Pascal library in a Pascal FCGI server app. Specifically it uses the 
+      ndfd library and its Pascal wrapper class from Part 2 of Pascal Dynamic 
+      Libraries to retrieve weather forecast data.
+  <LI>Use the <A HREF="http://qooxdoo.org/">qooxdoo</A> JavaScript framework 
+      for the client app.
+  <LI>Develop both the client and server app projects with Lazarus and the
+      <A HREF="../qxotica/QxoticaStatus.html">qxotica</A> tools.
+  <LI>Use the <A HREF="http://dev.openlayers.org/docs/files/OpenLayers-js.html">OpenLayers</A>
+      JavaScript mapping library to display a map of forecast data.
+</UL>
+
+A screenshot of QxCast is here: <A HREF="QxCast.jpg">QxCast.jpg</A><P>
+
+To try out QxCast, follow the steps for compiling the server app and running the
+client app for the Unicodum demo app <A HREF="../qxotica/QxoticaStatus.html#GettingStartedUnicodum">here</A>.
+Be sure to copy the ndfd library (previously compiled elsewhere) to the
+server app's folder.<P>
+
+A screenshot of the QxCast client project in Lazarus is here: 
+<A HREF="QxCast-Lazarus.jpg">QxCast-Lazarus.jpg</A><P>
+
+Notes on QxCast:<P>
+<OL>
+  <LI>See <A HREF="PascalDynLibs_4.html">Part 4</A> for tips on deploying an
+      FCGI app on an actual server (not just locally).<P>
+</OL>
+
+
+<HR>
+<A name="Todo"></A><H2>Future topics and to-do list</H2>
+
+<OL>
+  <LI>Create iSwiftCast example for iPad?
+  <LI>Investigate GIS options for iOS?
+</OL>
+
+<HR>
+Copyright 2015 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted March 15, 2015; last edited Sept. 13, 2015.
+<P>
+
+</BODY>
+
+</HTML>

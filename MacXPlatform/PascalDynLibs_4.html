@@ -1,0 +1,442 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2015 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Pascal Dynamic Libraries: More Than You Want To Know, Part 4</TITLE>
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<BODY>
+
+<CENTER>
+<H1>Pascal Dynamic Libraries: More Than You Want To Know</H1>
+<H2>Part 4: Testing on Amazon Web Services</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Ubuntu">Ubuntu server</A><BR>
+<A HREF="#Windows">Windows server</A><BR>
+<A HREF="#Misc">Misc. notes</A>
+<P>
+
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+These notes discuss testing several of <A HREF="PascalDynLibs_3.html">Part 3</A>'s 
+libraries and examples on Amazon Web Services (AWS), focusing on the 
+Free Tier that currently provides 12 months of free use of both Windows and 
+Linux server instances.<P>
+
+More specifically, these notes should be of interest to the following groups:<P>
+
+<UL>
+  <LI>Mac developers who want to test compiling and running code on 
+      Windows or Linux.
+  <LI>Developers who want to test deploying and running Web apps on an actual 
+      server (not just locally).
+  <LI>Anyone interested in seeing what's involved in setting up a modern
+      cloud-based virtual environment.
+</UL>
+
+You can sign up for a free AWS account here: <A HREF="http://aws.amazon.com">aws.amazon.com</A><P>
+
+
+<HR>
+<A name="Ubuntu"></A><H2>Ubuntu server</H2>
+
+Once you've logged into your AWS account, go to the EC2 Dashboard and create 
+a Linux instance. You do this on the Instances panel by clicking Launch Instance 
+and choosing an Amazon Machine Image (AMI) that you want to use. The notes that 
+follow assume that you've selected an <B>Ubuntu Server 14.04 LTS</B> AMI.
+Amazon Linux, Red Hat Linux and SUSE Linux AMIs are also available, but these
+are not covered here. Note that all AMIs are 64-bit.<P>
+
+Once you launch the instance, you'll be prompted to create a public key and
+download its private key file (.pem extension). You'll need this file to SSH
+into the instance from your computer.<P>
+
+Once the instance is running, you can SSH into it. For example, on a Mac,
+if your key file file is named myubuntu-1.pem, enter this in a Terminal window:<P>
+<PRE>  ssh -i myubuntu-1.pem ubuntu@xx.xx.xx.xx</PRE>
+where xx.xx.xx.xx is your instance's public IP address, which you can get from the
+EC2 Dashboard's Instances panel. This will log you into your instance's home 
+folder ("ubuntu"). Enter "exit" to log out.<P>
+
+<B><I>Important!</I></B> If you get an error message about permissions for
+your key file, be sure to do this:<P>
+<PRE>  chmod 400 myubuntu-1.pem</PRE>
+
+Once logged in, you can use sudo on your Ubuntu instance to install just about 
+anything you need. We'll start with installing Free Pascal.<P>
+
+<B><I>Tip:</I></B> If you need a text editor on your Ubuntu instance, try 
+the pre-installed nano.<P>
+
+
+<H3>Installing Free Pascal</H3>
+
+Since you won't be able to run a Web browser on your Ubuntu instance via SSH, you'll 
+need to use apt-get, curl, Subversion, etc. to install software. Unfortunately, 
+apt-get will install an out-of-date version of the Free Pascal compiler for 
+64-bit Linux. And there doesn't appear to be a directly reference-able FPC .deb 
+file that can be retrieved by curl. However, you can download the FPC .deb from
+the <A HREF="http://sourceforge.net/projects/lazarus/files/">Lazarus SourceForge</A>
+site in your computer's browser and then copy it to your 
+Ubuntu instance using a script. For example, you could create a file on your 
+computer named copy2ubu.sh and paste these lines into it:<P>
+
+<PRE>if [ "$1" = "" ]; then
+  echo "No file specified"
+elif ! [ -e "$1" ]; then
+  echo "File does not exist"
+else
+  scp -i myubuntu-1.pem "$1" ubuntu@ec2-xx-xx-xx-xx-xxxxx.compute.amazonaws.com:~
+fi
+</PRE>
+
+(The string between the "@" and the ":" is your Ubuntu instance's public DNS, 
+which can be obtained from the Instances panel.)<P>
+
+Now use the script to copy the .deb file to your Ubuntu instance like this:<P>
+
+<PRE>  ./copy2ubu.sh fpc_2.6.4-140420_amd64.deb</PRE>
+
+Install the package on your Ubuntu instance like this:<P>
+
+<PRE>  sudo dpkg -i fpc_2.6.4-140420_amd64.deb</PRE>
+
+<B><I>Tip:</I></B> To copy a file from your Ubuntu instance to your computer, 
+you can use a script like this on your computer:<P>
+
+<PRE>  scp -i myubuntu-1.pem ubuntu@ec2-xx-xx-xx-xx-xxxxx.compute.amazonaws.com:"$1" .</PRE>
+
+
+<H3>Testing Free Pascal</H3>
+
+On your Ubuntu instance, retrieve Part 3's example source code like this:<P>
+
+<PRE>  curl --remote-name https://dl.dropboxusercontent.com/u/28343282/MacXPlatform/p4g.zip</PRE>
+
+Unzip this file in a subfolder under your home folder.<P>
+
+You'll also need the Web Service Toolkit (WST) to compile Part 3's ndfd library, 
+so first install Subversion:<P>
+
+<PRE>  sudo apt-get install subversion</PRE>
+
+Now change to a subfolder where you want to download the WST source and 
+enter this:<P>
+
+<PRE>  svn co https://svn.code.sf.net/p/lazarus-ccr/svn/wst/trunk .</PRE>
+
+Next change to the p4g example code's ndfd subfolder and compile the ndfd
+library with FPC (adjust the -Fu path to point to your WST source):<P>
+
+<PRE>  ppcx64 -CiroR -O2 -XX -Cg -k-fPIC -Fu~/Tools/WST -olibndfd64.so ndfd.pas</PRE>
+
+To compile the examples below, you'll need to put the library somewhere that the
+linker can find it. You can just copy it to /usr/lib like this:<P>
+
+<PRE>  sudo cp -p libndfd64.so /usr/lib</PRE>
+
+Now compile the example testndfd.pas console app:<P>
+
+<PRE>  ppcx64 -Fu~/Tools/WST testndfd</PRE>
+
+And test the console app:<P>
+
+<PRE>  ./testndfd</PRE>
+
+
+<H3>Testing the GDAL unit</H3>
+
+First install GDAL. Since Ubuntu's default GDAL repository may be out-of-date, 
+add this repository:<P>
+
+<PRE>  sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable && sudo apt-get update</PRE> 
+
+Now install the GDAL/OGR programs and libraries:<P>
+
+<PRE>  sudo apt-get install gdal-bin libgdal-dev</PRE>
+
+Check to see what version of GDAL is installed by running one of the command-line
+utilities:<P>
+
+<PRE>  ogr2ogr --version</PRE>
+
+Now change to the p4g example code's gdal subfolder and compile the example 
+testgdal.pas console app:<P>
+
+<PRE>  ppcx64 testgdal</PRE>
+
+And run it:<P>
+
+<PRE>  ./testgdal</PRE>
+
+You should see the same version that ogr2ogr displayed.<P>
+
+
+<H3>Testing Mono</H3>
+
+Some version of Mono will already be installed on Ubuntu, but follow the steps on
+<A HREF="http://www.mono-project.com/docs/getting-started/install/linux/#debian-ubuntu-and-derivatives">www.mono-project.com</A>
+for setting up the current versions of Mono and mono_mod. Then install the
+current Mono:<P>
+
+<PRE>  sudo apt-get install mono-runtime && sudo apt-get update</PRE>
+
+Now change to the p4g example code's ndfd subfolder and compile the
+C# wrapper class and testndfd.cs console app:<P>
+
+<PRE>  ./comp-cs-interop.sh
+  ./comp-cs.sh</PRE>
+
+By default, these scripts use the /platform:x86 switch, which sets
+the Ndfd.Interop.dll assembly's Corflags 32BIT flag, but Mono ignores this
+.NET flag and still expects a 64-bit ndfd library. However, it will still 
+look for libndfd.so, instead of libndfd64.so. You can change the comp-cs-interop.sh
+script and add the /define:USE_64_BIT switch to change this behavior, 
+but it's probably easier just to redirect via a symlink:<P>
+
+<PRE>  sudo ln -s /usr/lib/libndfd64.so /usr/lib/libndfd.so</PRE>
+
+Now you can run the test app:<P>
+
+<PRE>  mono testndfd.exe</PRE>
+
+
+<H3>Compiling AspCast</H3>
+
+Retrieve the DotSpatial assemblies like this:<P>
+
+<PRE>  curl --remote-name https://dl.dropboxusercontent.com/u/28343282/MacXPlatform/DotSpatial_p4g.zip</PRE>
+
+Unzip these files in the AspCast example's refs subfolder. Also copy the 
+Ndfd.Interop.dll assembly to the refs subfolder.<P>
+
+Now compile the AspCast ASP.NET Web app with Mono:<P>
+
+<PRE>  xbuild AspCast.sln</PRE>
+
+To prepare for deployment, zip up these files:<P>
+
+<PRE>  zip aspcast Default.aspx
+  zip aspcast ImageHandler.ashx
+  zip aspcast Global.asax
+  zip aspcast web.config
+  zip aspcast Images/*.*
+  zip aspcast Layers/*.*
+  zip aspcast bin/*.*</PRE>
+
+
+<H3>Deploying AspCast</H3>
+
+First install Apache and mod_mono:<P>
+
+<PRE>  sudo apt-get install apache2 libapache2-mod-mono</PRE>
+
+Now deploy the AspCast files (substitute your folder for Tools):<P>
+
+<PRE>  cd /var/www/html
+  sudo mkdir aspcast
+  cd aspcast
+  sudo cp -p ~/Tools/p4g/AspCast/AspCast/aspcast.zip .
+  sudo unzip aspcast.zip
+  sudo rm aspcast.zip</PRE>
+
+Make sure you've created the /usr/lib/libndfd.so symlink as described above.<P>
+
+Also make sure Apache is running:<P>
+
+<PRE>  sudo service apache2 restart</PRE>
+
+Finally, on the EC2 Dashboard's Security Groups panel, edit the Inbound rules
+for your Ubuntu instance's security group. By default it only allows SSH,
+so you'll need to add HTTP (don't delete SSH).<P>
+
+Now, in a Web browser back on your computer, paste your Ubuntu instance's public
+DNS (from Instances panel) and add "/aspcast" to it (without quotes). Enter this 
+URL and the AspCast app should appear in your browser.<P>
+
+
+<H3>Testing Python</H3>
+
+Python 2.7 and 3.4 interpreters will already be installed, but you'll need 
+to install the Python libraries:<P>
+
+<PRE>  sudo apt-get install libpython2.7-dev libpython3.4-dev</PRE>
+
+Change to the p4g example code's ndfd subfolder and compile the Python
+extension modules:<P>
+
+<PRE>  ppcx64 -B -Cg -ondfdmod64.so ndfdmod.pas
+  ppcx64 -B -Cg -dUSE_PYTHON3 -ondfdmod64_3.so ndfdmod.pas</PRE>
+  
+Test with both Python 2.7 and 3.4:<P>
+
+<PRE>  python testndfd.py
+  python3 testndfd.py</PRE>
+
+
+<HR>
+<A name="Windows"></A><H2>Windows server</H2>
+
+Log into your AWS account, go to the EC2 Dashboard and create 
+a Windows instance. You do this on the Instances panel by clicking Launch Instance 
+and choosing an Amazon Machine Image (AMI) that you want to use. The notes that 
+follow assume you've selected a <B>Microsoft Windows Server 2012 R2 Base</B> AMI.
+Note that all AMIs are 64-bit.<P>
+
+Once you launch the instance, you'll be prompted to create a public key and
+download its private key file (.pem extension). You'll need this file to connect
+to the instance from your computer.<P>
+
+Next install a remote desktop client app on your computer. For example, on a Mac, 
+download the Microsoft Remote Desktop app from the Apple App Store. Then follow
+<A HREF="http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/connecting_to_windows_instance.html">Amazon's instructions</A>
+for connecting to your Windows instance.<P>
+
+<B><I>Tip</I></B>: On a Mac, once you've downloaded the .rdp file, you can
+double-click it to start Microsoft Remote Desktop and connect to your
+Windows instance. But to customize your setup, you'll need to use File | Import
+and select the .rdp file. Now you can edit the setup. For example, you can
+turn off the default full screen mode and scale the Windows desktop to the size 
+of the window on your Mac. You can also set up a shared folder on your Mac for 
+copying files to and from your Windows instance.<P>
+
+
+<H3>Installing and testing software</H3>
+
+Because Windows Server 2012 provides a normal Windows desktop, you can install
+and test software the same as you would on non-server Windows. The desktop
+has the Windows 8 look, where the Start menu has been replaced by a kind
+of start screen.<P>
+
+To test Part 3's examples, you can download and install whatever software 
+you need, including Free Pascal, Subversion (for retrieving Web Service Toolkit
+source), Xamarin Studio, Python, etc. Note that .NET 4.0 is already installed.<P> 
+
+If you need a text editor, Windows includes both Notepad and WordPad. Notepad
+does not know how to handle text files with Unix-style line endings, 
+but WordPad does.<P>
+
+Windows Server includes something called PowerShell, but the familiar 
+Command Prompt is also available.<P>
+
+<B><I>Tip</I></B>: On a Mac laptop, use a two-finger click on the trackpad
+to simulate a right-click. The normal control+click combination won't work 
+in Windows.<P>
+
+
+<H3>Compiling AspCast</H3>
+
+You can compile and test AspCast with Xamarin Studio, as described in
+<A HREF="https://dl.dropboxusercontent.com/u/28343282/MacXPlatform/PascalDynLibs_3.html#DotSpatial">Part 3</A>.
+Be sure to copy the ndfd.dll library to the AspCast bin subfolder and
+the DotSpatial and Ndfd.Interop.dll assemblies to the AspCast refs subfolder.<P>
+
+To prepare for deployment, zip up these files:<P>
+
+<PRE>  zip aspcast Default.aspx
+  zip aspcast ImageHandler.ashx
+  zip aspcast Global.asax
+  zip aspcast web.config
+  zip aspcast Images/*.*
+  zip aspcast Layers/*.*
+  zip aspcast bin/*.*</PRE>
+
+
+<H3>Deploying AspCast</H3>
+
+Follow <A HREF="http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/install-WIMP.html">Amazon's instructions</A> 
+for installing Microsoft's IIS Web server.<P>
+
+Next create a subfolder named "aspcast" under C:\inetpub\wwwroot and unzip
+the AspCast files in this subfolder.<P>
+
+Finally, make sure you've done the following:<P>
+
+<UL>
+  <LI>In IIS Manager, under Sites, right-click aspcast and choose Convert to
+  Application.<P>
+  <LI>In IIS Manager, under Application Pools, create a new pool for aspcast
+  and under the pool's Advanced Settings, change Enable 32-Bit Applications
+  to True.<P>
+  <LI>In IIS Manager, under IIS Authentication for aspcast, change 
+  Anonymous Authentication from "Specific user" to "Application pool identity".<P>
+  <LI>On the EC2 Dashboard's Security Groups panel, edit the Inbound rules
+  for your Windows instance's security group. By default it only allows RDP,
+  so you'll need to add HTTP (don't delete RDP).<P>
+</UL>
+
+Now, in a Web browser back on your computer, paste your Windows instance's public
+DNS (from Instances panel) and add "/aspcast" to it (without quotes). Enter this 
+URL and the AspCast app should appear in your browser.<P>
+
+
+<H3>Deploying QxCast</H3>
+
+<UL>
+  <LI>In Server Manager, install CGI.<P>
+  <LI>Copy getforecast.cgi, getforecast.exe, ndfd.dll and web.config to your 
+      server (for example, to C:\inetpub\wwwroot\getforecast).<P>
+  <LI>Follow the steps under Deploying AspCast above for getforecast.<P>
+  <LI>In IIS Manager, under ISAPI and CGI Restrictions, add getforecast.cgi and
+      check the "Allow extension path to execute" box.<P>
+  <LI>Edit QxCast's config.json file and change the build-cgi job's URL to
+      point to getforecast.cgi on your server, then run generate.py build-cgi.<P>
+  <LI>Copy QxCast's build folder to your server under C:\inetpub\wwwroot and 
+      rename it to qxcast.
+</UL>
+
+Now, in a Web browser back on your computer, paste your Windows instance's public
+DNS (from Instances panel) and add "/qxcast" to it (without quotes). Enter this 
+URL and the QxCast app should appear in your browser.<P>
+
+
+<HR>
+<A name="Misc"></A><H2>Misc. notes</H2>
+
+<OL>
+  <LI>If you stop your instance, its public IP address may change the next time
+      you start it. Presumably when an instance is not running, its IP address 
+      is returned to a pool of addresses that Amazon uses. You'll need to edit 
+      any scripts that use the IP address. However, just rebooting the instance 
+      does not change the instance's IP address.<P>
+
+  <LI>In an instance's security group, you can specify whether inbound traffic
+      is allowed from any IP address (0.0.0.0), a range of IP addresses, or
+      even a specific IP address (eg, your local computer's). Keep in mind that
+      if you limit SSH or RDP inbound traffic to a specific IP address,
+      you may need to update the IP address if your ISP routinely changes 
+      the IP address that you use. When editing the security group, you can
+      choose "My IP" from the Source drop-down list to update the IP address
+      to whatever you're currently logged into AWS with.<P>
+      
+  <LI>Instance time zones are set to UTC by default.<P>
+</OL>
+
+
+<HR>
+Copyright 2015 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted Sept. 13, 2015.
+<P>
+
+</BODY>
+
+</HTML>

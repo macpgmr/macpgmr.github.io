@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<!--Copyright 2016 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Web App Development Overview, Part 2</TITLE>
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<BODY>
+
+<CENTER>
+<H1>Web App Development Overview</H1>
+<H2>Part 2: Creating a Map App with Pascal and "Canned" JavaScript</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#10Steps">The 10 Steps</A><BR>
+<A HREF="#PascalServer">The Pascal Server App</A><BR>
+<A HREF="#OpenLayers">OpenLayers and Map Tile Servers</A><BR>
+<P>
+
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+This article takes a simple JavaScript app, <B>QxMap</B>, and shows how to add a 
+Pascal server app to it. QxMap can be customized to use your own locations
+on the map via a simple JSON file rather than modifying the JavaScript code.
+These locations will be passed to the server app, which returns data
+for the locations to be displayed on the map.<P>
+
+
+The key here is to focus on the Pascal server part and ignore for now the
+client-side JavaScript that might seem strange to Pascal developers.
+A side benefit of this approach is to minimize the potential frustration 
+with something new by doing one step at a time:
+
+<UL>
+  <LI>Make sure your customized QxMap works without a server app.
+  <LI>Make sure your server app works without a client app.
+  <LI>Finally, combine the client with the server and make sure everything 
+      still works.
+</UL>
+
+You can play with the QxMap app below. Or click 
+<A HREF="../iApps/qxmap/index.html" TARGET='_blank'>here</A> 
+to launch it in its own browser window (for example, to test on a 
+mobile device).<P>
+
+<EMBED SRC="../iApps/qxmap/index.html" TYPE="text/html" WIDTH=800 HEIGHT=500><P>
+
+
+<HR>
+<A name="10Steps"></A><H2>The 10 Steps</H2>
+
+<OL>
+<LI>Download the <A HREF="http://www.qooxdoo.org">qooxdoo SDK</A>. Unzip this
+    anywhere you want.<P>
+
+<LI>On Windows, make sure you have <A HREF="https://www.python.org">Python</A> 2.7 installed. 
+    Mac and Linux systems will already have Python installed.<P>
+
+<LI>Download the <A HREF="qxmap_src.zip">QxMap app's source</A>. Unzip this anywhere you want.<P>
+
+<LI>Create your own JSON file of location data. Substitute this file for the
+    example <B>locations.json</B> included with QxMap (in source/resource/qxmap).<P>
+
+    The locations.json file included with QxMap looks like this:<P>
+    <pre><code class="json">[{"name":"Ouray",     "lat":38.02, "lon":-107.67, "display":"Data goes here"},
+ {"name":"Silverton", "lat":37.81, "lon":-107.66, "display":"Data goes here"},
+ {"name":"Telluride", "lat":37.94, "lon":-107.81, "display":"Data goes here"}]</code></pre>
+
+    The "display" strings are just placeholders for what will be ultimately
+    be supplied by the server app. You can put anything you want there for use 
+    in testing QxMap without a server app.<P>
+
+<LI>Edit QxMap's <B>config.json</B> file and customize it for your own needs:<P>
+  <UL>
+  <LI>Change the <B>QOOXDOO_PATH</B> setting so it points to your qooxdoo SDK's location.<P>
+  <LI>Edit the <B>app-settings</B> near the bottom of the file. For example,
+      be sure to change the <B>mapCenterLat</B> and <B>mapCenterLon</B> settings so the
+      map's center point is right for your locations. If the name of your
+      locations JSON file is different, change the <B>locsJsonUrl</B> setting accordingly.
+  </UL><P>
+
+    The default app-settings look like this:<P>
+    <pre><code class="json">    "app-settings" :
+    {
+      "environment" : {
+        "appName"      : "QxMap",
+        "appVersion"   : "0.1",
+        "copyright"    : "",
+        "description"  : "",
+        "mapCenterLat" : 37.92, 
+        "mapCenterLon" : -107.74,
+        "mapZoomLevel" : 10,
+        "locsJsonUrl"  : "resource/qxmap/locations.json",
+      }
+    },</code></pre>
+
+    Note that you can edit the config.json file in Lazarus by opening the <B>qxmap.lpi</B>
+    project file (in source/class/qxmap).<P>
+
+<LI>Generate your own QxMap app by entering this at the command line in the folder
+    where config.json is located:<P>
+
+    <pre><code class="bash">python generate.py source-dropbox</code></pre>
+
+    This will generate a version of QxMap that doesn't call a server app. This type of
+    simple app can be posted anywhere on the Web, including a free Dropbox 
+    account (hence the job name).<P>
+
+    Note that if you have the <A HREF="https://sourceforge.net/projects/qxotica">Qx_Proj</A> 
+    package installed in Lazarus, you can open the qxmap.lpi project in Lazarus
+    and choose Run | Compile to run the generate.py script.<P>
+
+<LI>To test QxMap, double-click the <B>index.html</B> file in QxMap's source folder
+    to open it in your browser.<P>
+
+<LI>Write your Pascal server app. See below for what this server app
+    needs to do.<P>
+
+<LI>Create a version of QxMap that calls your Pascal server app by running 
+    generate.py with the <B>source-cgi</B> job. You can test this version
+    locally against your server app.<P>
+
+<LI>Create a version of QxMap for deployment by running generate.py with the
+    <B>build-cgi</B> job.<P>
+    
+    You can zip up the QxMap files that need to be deployed by entering 
+    this at the command line in the folder where config.json is located:<P>
+    
+    <pre><code class="bash">zip -r build build</code></pre>
+    
+    Once unzipped on your server, you can rename the build folder to your
+    app's name.
+
+</OL>
+
+
+<HR>
+<A name="PascalServer"></A><H2>The Pascal Server App</H2>
+
+QxMap will call the server app and pass the latitude and longitude of your
+locations as named query parameters. For example, with the example locations, 
+the query string passed to the server app would look like this:<P>
+
+<pre><code class="bash">lat1=38.02&amp;lon1=-107.67&amp;lat2=37.81&amp;lon2=-107.66&amp;lat3=37.94&amp;lon3=-107.81</code></pre>
+
+All your server app has to do is return data in JSON format for the specified locations.
+For example, here is what the
+<A HREF="https://dl.dropboxusercontent.com/u/28343282/MacXPlatform/PascalDynLibs.html">Pascal for GIS</A>
+<B>getforecast</B> app might return for these locations (with line breaks 
+inserted for readability):
+
+<pre><code class="json">[{"point":"1","high":"67","low":"36","display":"High: 67 Low: 36"},
+ {"point":"2","high":"52","low":"34","display":"High: 52 Low: 34"},
+ {"point":"3","high":"53","low":"37","display":"High: 53 Low: 37"}]</code></pre>
+
+The "display" field is the only required data; that's what QxMap will look
+for in the returned JSON and what it will display on the map for each location.
+
+<H3>A slight complication</H3>
+
+In order to make cross-domain calls, QxMap actually makes a 
+<A HREF="https://en.wikipedia.org/wiki/JSONP">JSONP</A> request, passing
+along an extra "callback" parameter that the server app needs to look for. 
+If present, the server app "wraps" the returned data with this parameter. 
+For example, here is what the JSONP request might look like:<P>
+
+<pre><code class="bash">lat1=38.02&amp;lon1=-107.67&amp;lat2=37.81&amp;lon2=-107.66&amp;lat3=37.94&amp;lon3=-107.81&amp;callback=qx.bom.request.Jsonp.qx1474502452269303.callback</code></pre>
+
+And here's what the returned data would look like (again, with line breaks 
+inserted for readability):<P>
+
+<pre><code class="json">qx.bom.request.Jsonp.qx1474502452269303.callback(
+[{"point":"1","high":"67","low":"36","display":"High: 67 Low: 36"},
+ {"point":"2","high":"52","low":"34","display":"High: 52 Low: 34"},
+ {"point":"3","high":"53","low":"37","display":"High: 53 Low: 37"}]);</code></pre>
+
+<H3>Pascal CGI units, etc.</H3>
+
+You can write your Pascal server app using whatever CGI or other units you want,
+as long as it does what is outlined above.<P>
+
+For example, the <A HREF="https://dl.dropboxusercontent.com/u/28343282/MacXPlatform/PascalDynLibs.html">Pascal for GIS</A>
+<B>getforecast</B> app uses the abandoned ExtPascal project's FCGIApp unit.
+The source for getforecast is <A HREF="p4g.zip">here</A> if you want to look
+at it. The source for the FCGIApp and related units is <A HREF="fcgiapp_pkg.zip">here</A>.<P>
+
+You can compile these source files as follows:<P>
+
+<pre><code class="bash">lazbuild fcgiapp_pkg.lpk
+lazbuild cgigateway.lpi
+lazbuild getforecast.lpi
+</code></pre>
+
+Note that your Pascal app does not need to return weather forecast data the
+way getforecast does. Any data associated with specific locations that changes 
+regularly would probably be a good candidate for displaying with QxMap.
+
+<H3>Deploying</H3>
+
+QxMap's config.json file exports four "jobs" that you use with
+generate.py to specify which version of QxMap you want to generate. 
+Here's what they look like:<P>
+
+<pre><code class="json">    "source-dropbox" :
+    {
+      "extend" : ["source", "app-settings", "ol-debug", "osm-stamen"],
+      "environment" : {
+        "getDataUrl" : ""
+      }
+    },
+
+    "build-dropbox" :
+    {
+      "extend" : ["build", "app-settings", "ol-deploy", "osm-stamen"],
+      "environment" : {
+        "getDataUrl" : ""
+      }
+    },
+
+    "source-cgi" :
+    {
+      "extend" : ["source", "app-settings", "ol-debug", "osm-stamen"],
+      "environment" : {
+        "getDataUrl" : "http://yourdomain.com/getforecast/getforecast.cgi"
+      }
+    },
+
+    "build-cgi" :
+    {
+      "extend" : ["build", "app-settings", "ol-deploy", "osm-stamen"],
+      "environment" : {
+        "getDataUrl" : "../../getforecast/getforecast.cgi"
+      }
+    }</code></pre>
+
+Use the <B>source-dropbox</B> job to generate a version of QxMap for testing locally
+without calling a server. Use the <B>build-dropbox</B> job to generate a version
+of QxMap to deploy to Dropbox (or other site).<P>
+
+Note that the Dropbox jobs don't specify a server app URL in the <B>getDataUrl</B>
+setting. However, you <I>can</I> call a server from a Dropbox deployed QxMap as long
+as it communicates over <B>https</B>, not <B>http</B> (since Dropbox sites are https). 
+For a more in-depth explanation, see 
+<A HREF="https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content">this</A>.<P>
+
+Use the <B>source-cgi</B> job to generate a version of QxMap for testing locally
+that calls the server app. Use the <B>build-cgi</B> job to generate a version
+of QxMap to deploy.<P>
+
+For the source-cgi and build-cgi jobs, adjust the getDataUrl setting as needed.
+With build-cgi's default getDataUrl, the assumption is that the server app
+will be on the same server, relative to QxMap's directory. With source-cgi,
+the full URL is needed.<P>
+
+
+<HR>
+<A name="OpenLayers"></A><H2>OpenLayers and Map Tile Servers</H2>
+
+QxMap uses the <A HREF="http://openlayers.org">OpenLayers</A> JavaScript library
+to draw the map. The config.json file includes settings for OpenLayers
+as well:<P>
+
+<pre><code class="json">    "ol" :
+    {
+      "environment" : {
+        "olVersion"   : "3.18.2",
+        "olCssUrl"    : "https://cdnjs.cloudflare.com/ajax/libs/ol3/3.18.2/ol.css",
+        "olMarkerUrl" : "http://openlayers.org/api/img/marker.png",
+      }
+    },
+
+    "ol-debug" :
+    {
+      "extend" : ["ol"],
+      "environment" : {
+        "olJsUrl" : "https://cdnjs.cloudflare.com/ajax/libs/ol3/3.18.2/ol-debug.js",
+      }
+    },
+
+    "ol-deploy" :
+    {
+      "extend" : ["ol"],
+      "environment" : {
+        "olJsUrl" : "https://cdnjs.cloudflare.com/ajax/libs/ol3/3.18.2/ol.js",
+      }
+    },</code></pre>
+
+You can change these settings as needed, for example to use a newer version
+of OpenLayers or to deploy the OpenLayers CSS and JavaScript files on your
+own server. Note that the ol-debug.js file is somewhat larger than the ol.js
+file because its whitespace has not been stripped out to minimize its size.
+Normally when you deploy an app you would use the smaller ol.js to minimize
+download time.<P>
+
+OpenLayers can download map tiles from a variety of servers. By default,
+QxMap uses <A HREF="http://maps.stamen.com/#terrain/12/37.7706/-122.3782">Stamen's terrain</A> map tiles. 
+Stamen's map tile server is free to use.<P>
+
+OpenStreetMap also provides map tile servers, but there are
+<A HREF="http://wiki.openstreetmap.org/wiki/Tile_usage_policy">restrictions</A> on their use.
+However, you can test your QxMap with OpenStreetMap (and see how different
+the map looks) by changing <B>osm-stamen</B> to <B>osm-mapnik</B> in the
+appropriate job (for example, source-dropbox) and regenerating QxMap.<P>
+
+To add a map tile server to config.json, just add a new job similar to
+osm-stamen, which looks like this:<P>
+
+<pre><code class="json">    "osm-stamen" :
+    {
+      "environment" : {
+        "osmUrl" : "https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg",
+        "osmAttribution" : "Map tiles by <a href='http://stamen.com'>Stamen Design</a>, under <a href='http://creativecommons.org/licenses/by/3.0'>CC BY 3.0</a>. Data by <a href='http://openstreetmap.org'>OpenStreetMap</a>, under <a href='http://www.openstreetmap.org/copyright'>ODbL</a>."
+      }
+    },</code></pre>
+
+Map tile servers typically support URL templates, where {z} is zoom level,
+{x} is horizontal position, and {y} is vertical position of the desired tile.<P>
+
+
+<HR>
+Copyright 2016 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted Sept. 24, 2016.<P>
+Code syntax highlighting done with <A HREF="https://highlightjs.org">highlight.js</A>.
+<P>
+
+</BODY>
+
+</HTML>
+

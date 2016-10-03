@@ -1,0 +1,843 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2015 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Pascal Dynamic Libraries: More Than You Want To Know, Part 1</TITLE>
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<BODY>
+
+<CENTER>
+<H1>Pascal Dynamic Libraries: More Than You Want To Know</H1>
+<H2>Part 1: The Basics</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#DotNet">.NET Languages</A><BR>
+<A HREF="#CLang">C Languages</A><BR>
+<A HREF="#Python">Python</A><BR>
+<A HREF="#Flowchart">Flowchart</A><BR>
+<A HREF="#Resources">Resources</A><BR><BR>
+<A HREF="PascalDynLibs_2.html">Part 2: Passing Pointers and Strings</A><BR>
+<A HREF="PascalDynLibs_3.html">Part 3: Pascal for GIS</A><BR>
+<A HREF="PascalDynLibs_4.html">Part 4: Testing on Amazon Web Services</A><BR>
+<P>
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+This article shows how to compile a Pascal dynamic library and use it with a
+variety of other languages, including C#, VB.NET, Swift, C, C++, Python
+and IronPython. The primary focus is the Free Pascal compilers for Mac OS X, 
+but examples are given for working with Free Pascal on Windows as well. 
+The Pascal example code can also be compiled with Delphi on Windows and Free Pascal 
+on Linux, but no specific examples are given for those compilers.<P>
+
+All source code and scripts mentioned in this article are available here:
+
+<A HREF="PascalDynLibs.zip">PascalDynLibs.zip</A><P>
+
+Here's a simple Pascal library whose tiny bit of trivial code is dwarfed by
+conditionals that have been added to make the library as general as possible. 
+For now, you can mostly ignore the conditionals and just note that the library
+implements and exports a single function that takes one argument and returns
+a value derived from the argument's value.<P>
+
+<pre><code class="delphi">library foo;
+
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
+
+uses
+  SysUtils
+{$IFDEF FPC},
+  ctypes
+{$ENDIF};
+  
+{$IFNDEF FPC}
+type
+  cint32 = LongInt;
+{$ENDIF}
+
+ //By default, use cdecl on Windows too: if stdcall, MSVC won't link
+ // to 32-bit Delphi/FPC DLL unless export decorated names too (below).
+{$DEFINE USE_CDECL}
+{$IFDEF USE_STDCALL}  //Override and use stdcall?
+  {$UNDEF USE_CDECL}
+{$ENDIF}
+
+function FooGetVal(InParam : cint32) : cint32; {$IFDEF USE_CDECL}cdecl{$ELSE}stdcall{$ENDIF};
+begin
+  try
+    Result := InParam * 2;
+  except  //No way to return E.Message, so just return impossible value (odd).
+    Result := -1;
+  end;
+end;
+
+exports
+  FooGetVal
+{$IFNDEF USE_CDECL}
+  {$IFDEF WIN32},
+  FooGetVal name 'FooGetVal@4' //Also export stdcall-decorated name with Win32.
+  {$ENDIF}
+{$ENDIF};
+
+end.
+</code></pre>
+
+On OS X, we can compile <B>foo.pas</B> to a universal or "fat" <B>libfoo.dylib</B>
+that contains both 32- and 64-bit libraries:<P>
+
+<pre><code class="bash">ppc386 foo.pas
+ppcx64 -olibfoo64.dylib foo.pas
+lipo -create libfoo.dylib libfoo64.dylib -output libfoo.dylib
+install_name_tool -id ./libfoo.dylib libfoo.dylib
+rm libfoo64.dylib
+</code></pre>
+
+You can check that it contains both 32- and 64-bit code:<P>
+
+<pre><code class="bash">file libfoo.dylib
+</code></pre>
+
+And see what symbols the library defines (exports):<P>
+
+<pre><code class="bash">nm -m -U libfoo.dylib
+</code></pre>
+
+On Windows, we can compile <B>foo.pas</B> to a 32-bit <B>foo.dll</B> and
+a 64-bit <B>foo64.dll</B>:<P>
+
+<pre><code>ppc386 foo.pas
+ppcrossx64 -ofoo64.dll foo.pas
+</code></pre>
+
+
+<HR>
+<A name="DotNet"></A><H2>.NET Languages</H2>
+
+An easy way to use a compiled Pascal library is with a .NET language.<P>
+
+First we'll create an interop assembly in C# that sits between your calling
+code (any .NET language) and the compiled library. The interop assembly makes 
+library function GetFooVal available as static function GetVal of class FooLib. 
+Since the function is static, you won't have to instantiate the class to use the function.<P>
+
+<pre><code class="csharp">// FooLib.cs
+using System;
+using System.Runtime.InteropServices;
+
+namespace Foo.Interop
+{
+  public class FooLib
+  {
+  #if USE_64_BIT
+    private const string FooLibNameBase = "foo64";
+  #else
+    private const string FooLibNameBase = "foo";
+     //Note 32-bit Mono on OS X needs 32-bit or "fat" libfoo.dylib
+  #endif
+
+  #if USE_STDCALL
+    private const CallingConvention FooCallConv = CallingConvention.StdCall;
+  #elif USE_WINAPI  //uses StdCall on Windows and Cdecl on OS X and Linux
+    private const CallingConvention FooCallConv = CallingConvention.Winapi;
+  #else
+    private const CallingConvention FooCallConv = CallingConvention.Cdecl;
+  #endif
+
+     [DllImport(FooLibNameBase,
+                CallingConvention=FooCallConv)]
+    private static extern Int32 FooGetVal(Int32 InParam);
+
+    public static Int32 GetVal(Int32 InParam)
+    {
+      return FooGetVal(InParam);
+    }
+  }
+}
+</code></pre>
+
+On OS X, compile the interop assembly with the Mono C# compiler:<P>
+
+<pre><code class="bash">mcs /target:library /platform:x86 /out:Foo.Interop.dll FooLib.cs
+</code></pre>
+
+And on Windows, compile it with the .NET C# compiler:<P>
+
+<pre><code>C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe /target:library /platform:x86 /out:Foo.Interop.dll FooLib.cs
+</code></pre>
+
+The resulting <B>Foo.Interop.dll</B> assembly can now be used with any .NET
+language. We'll test the assembly and thus the library with this VB.NET code:<P>
+
+<pre><code class="vbnet">' testfoo.vb
+Option Explicit On
+Option Strict On
+
+Imports Foo.Interop
+
+Public Class TestFoo
+
+  Public Shared Sub Main()
+    Console.WriteLine(FooLib.GetVal(1)) 
+  End Sub
+
+End Class
+</code></pre>
+
+On OS X, compile the test code with the Mono VB.NET compiler:<P>
+
+<pre><code class="bash">vbnc /target:exe /reference:Foo.Interop.dll testfoo.vb 
+</code></pre>
+
+And on Windows, compile it with the .NET VB.NET compiler:<P>
+
+<pre><code>C:\Windows\Microsoft.NET\Framework\v4.0.30319\vbc.exe /target:exe /platform:x86 /reference:Foo.Interop.dll testfoo.vb
+</code></pre>
+
+To run the test code on OS X:<P>
+
+<pre><code class="bash">mono testfoo.exe
+</code></pre>
+
+And on Windows:<P>
+
+<pre><code>testfoo
+</code></pre>
+
+When run, the test program should print the number "2" to the console.<P>
+
+Note that if your calling code is also C#, you can dispense with a separate
+interop assembly and simply compile its source into the test application,
+like this on OS X:<P>
+
+<pre><code class="bash">mcs /target:exe testfoo.cs FooLib.cs
+</code></pre>
+
+<H3>Using the 64-bit library</H3>
+
+Since Mono on OS X is currently only 32-bit, you don't need to worry about
+the 64-bit library here. On Windows, you'll need to recompile the interop
+assembly so it knows to call <B>foo64.dll</B> instead of <B>foo.dll</B>
+by defining USE_64_BIT. Also specify x64 for the platform; this switch
+also affects the size of the .NET IntPtr type (tip: use IntPtr if your 
+library passes pointers).<P>
+
+<pre><code>C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /target:library /platform:x64 /out:Foo.Interop.dll /define:USE_64_BIT FooLib.cs
+</code></pre>
+
+
+<HR>
+<A name="CLang"></A><H2>C Languages</H2>
+
+When you write a Pascal library, you need to decide on two rather important
+things that affect how it interfaces with other languages: (1) its calling
+convention and (2) its argument types. In the example above, the <B>cdecl</B>
+calling convention is used by default and a standard C type from the FPC
+<B>ctypes</B> unit is used for the function's single argument and its return type.<P>
+
+To use the library in a C language, you need to create a header file for it
+and the header file's calling convention and types must match the library's.
+Here's the header file for our example library:<P>
+
+<pre><code class="h">// foo.h
+#include &lt;stdint.h>
+
+#ifdef _MSC_VER
+  #define CDECL __cdecl
+  #define STDCALL __stdcall
+#else
+  #define CDECL  /* */
+  #define STDCALL __attribute__((stdcall))
+#endif
+
+#ifdef USE_STDCALL
+  #define FOO_CALL STDCALL
+#else
+  #define FOO_CALL CDECL
+#endif
+ //Note issue with 32-bit Windows DLL: if __stdcall is used, 
+ // MSVC linker looks for stdcall-decorated "C" function names.
+ // http://en.wikipedia.org/wiki/Name_mangling
+ // https://msdn.microsoft.com/en-us/library/x7kb4e2f.aspx
+ // https://msdn.microsoft.com/en-us/library/deaxefa7.aspx
+
+typedef int32_t FOO_INT;
+
+FOO_INT FOO_CALL FooGetVal(FOO_INT InParam);
+</code></pre>
+
+<H3>Swift</H3>
+
+On OS X, you can use any C or Objective C library or framework with your 
+Swift code if you have the library's header file. With a header file, Swift
+sees our Pascal library as a C library. Here's a simple
+Swift program that calls our library:<P>
+
+<pre><code class="swift">// testfoo.swift
+
+class FooLib {
+
+  class func GetVal(InParam: Int32) -> Int32 {
+    return FooGetVal(InParam)
+  }
+}
+
+print(FooLib.GetVal(1))
+</code></pre>
+
+Compile the test program like this, specifying the header file and
+linking to the library:<P>
+
+<pre><code class="bash">xcrun swiftc -import-objc-header foo.h -L. -lfoo testfoo.swift
+</code></pre>
+
+And run it as you would any native app:<P>
+
+<pre><code class="bash">./testfoo
+</code></pre>
+
+<H3>C</H3>
+
+Here's our C test program:<P>
+
+<pre><code class="c">// testfoo.c
+#include "foo.h"
+#include &lt;stdio.h>
+
+int main()
+{
+  printf("%d\n", FooGetVal(1));
+}
+</code></pre>
+
+On OS X, since we have a universal library, we'll create a universal 
+program:<P>
+
+<pre><code class="bash">clang -L. -lfoo -m32 -otestfoo testfoo.c
+clang -L. -lfoo -m64 -otestfoo64 testfoo.c
+lipo -create testfoo testfoo64 -output testfoo
+rm testfoo64
+</code></pre>
+
+You can run the test program in any of these ways (default, force 32-bit, 
+force 64-bit):<P>
+
+<pre><code class="bash">./testfoo
+arch -32 ./testfoo
+arch -64 ./testfoo
+</code></pre>
+
+On Windows, there are at least three commonly used C compilers that
+you might want to test against:<P>
+
+<H4>1. GCC</H4>
+
+You can compile the test code with this batch file, which assumes that MinGW
+is installed under C:\Tools:<P>
+
+<pre><code>echo off
+setlocal
+set PATH=C:\Tools\MinGW\bin;%PATH%
+C:\Tools\MinGW\bin\gcc -L. -lfoo -otestfoo.exe testfoo.c
+</code></pre>
+
+The MinGW GCC compilers only support 32-bits. If you need 64-bits, install
+the separate MinGW-w64 project's compilers.
+
+<H4>2. Clang</H4>
+
+The LLVM project's Clang compiler is also available for Windows. It can be
+used with either the GCC or Microsoft linker. To use it with the
+GCC linker, you can use this batch file, which assumes that both LLVM and
+MinGW are installed under C:\Tools:<P>
+
+<pre><code>echo off
+setlocal
+C:\Tools\LLVM\bin\clang -c -IC:\Tools\MinGW\include testfoo.c
+set PATH=C:\Tools\MinGW\bin;%PATH%
+C:\Tools\MinGW\bin\gcc -L. -lfoo -otestfoo.exe testfoo.o
+</code></pre>
+
+<H4>3. Visual C</H4>
+
+To compile both a 32-bit and 64-bit program with Visual C, first
+create a text .def file for both 32- and 64-bit. For our example, these are
+files <B>foo.def</B> and <B>foo64.def</B> (identical files):<P>
+
+<pre><code>EXPORTS
+FooGetVal
+</code></pre>
+
+Now create the <B>foo.lib</B> and <B>foo64.lib</B> import files from
+foo.def and foo64.def:<P>
+
+<pre><code>setlocal
+set vcpath="C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC"
+%vcpath%\bin\lib /DEF:foo.def /MACHINE:X86 /OUT:foo.lib
+%vcpath%\bin\lib /DEF:foo64.def /MACHINE:X64 /OUT:foo64.lib
+</code></pre>
+
+Finally, compile <B>testfoo.exe</B> and <B>testfoo64.exe</B>:<P>
+
+<pre><code>echo off
+setlocal
+set vcpath="C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC"
+call %vcpath%\bin\vcvars32.bat
+%vcpath%\bin\cl.exe testfoo.c foo.lib
+call %vcpath%\bin\amd64\vcvars64.bat
+%vcpath%\bin\amd64\cl.exe /Fetestfoo64.exe testfoo.c foo64.lib
+</code></pre>
+
+<B><I>Important!</I></B> The foo.lib file is incompatible with the GCC linker.
+Be sure to delete foo.lib before attempting to link with GCC.
+
+<H3>C++</H3>
+
+Using the library with C++ is almost exactly the same as C. The one thing you
+do different is make sure the C++ compiler knows that the library contains
+C-like functions, not C++ code:
+
+<pre><code class="c++">// testfoo.cpp
+extern "C" {
+#include "foo.h"
+}
+#include &lt;stdio.h>
+
+int main()
+{
+  printf("%d\n", FooGetVal(1));
+}
+</code></pre>
+
+<H3>What about <I>stdcall</I>?</H3>
+
+On OS X and Linux, you normally compile libraries to use the <B>cdecl</B>
+calling convention. You can use cdecl with Windows libraries too. But
+what if you need to use the <B>stdcall</B> calling convention? For example,
+say you're writing a library to use with a Visual C/C++ app that only supports
+libraries that use the stdcall convention.<P>
+
+With a 32-bit library, Visual C expects the library's function names to be
+"decorated". See the links in the foo.h header file above for more
+information. But basically it means that you'll need to export the library
+functions using decorated names. For our example, that means the following:<P>
+
+<UL>
+  <LI>Compile <B>foo.pas</B> and <B>foomod.pas</B> with the -dUSE_STDCALL 
+  switch. With foo.pas, this compiles the exported function with <B>stdcall</B>
+  instead of <B>cdecl</B>. It also exports the function both as <B>GetFooVal</B>
+  <I>and</I> <B>GetFooVal@4</B>. Even though there's only one function, it
+  gets exported with two different entry points.<P>
+  Note that determining the decorated function name can be a bit tricky. You
+  have to add up the sizes of all arguments and use that after the "@" in
+  the function name. With the FooGetVal function, there's only one 4-byte
+  argument.
+  <LI>To test the library with Visual C, the <B>foo.def</B> file should look
+  like this (and be sure to recreate foo.lib):<P>
+  <pre><code>EXPORTS
+FooGetVal
+FooGetVal@4</code></pre>
+  <LI>To test the library with GCC or Clang, compile with the -DUSE_STDCALL
+  switch; with Visual C, compile with the /DUSE_STDCALL switch. See how this 
+  define is used in foo.h.<P>
+  <LI>With GCC and Clang, you can link with the <B>-Wl,--enable-stdcall-fixup</B>
+  switch if you don't want to bother with exporting decorated function names.<P>
+  <LI>If you want to use a stdcall library with .NET on Windows, but use a
+  cdecl library with Mono on OS X and Linux, consider compiling the interop with 
+  USE_WINAPI defined (see FooLib.cs above). Then the same interop assembly 
+  can be used with both Windows and OS X / Linux.
+</UL>
+
+<HR>
+<A name="Python"></A><H2>Python</H2>
+
+To call a dynamic library from Python, you need to create a Python extension
+module that can be imported by Python. This module is itself a dynamic
+library that exports a single function that Python calls to get the 
+information it needs about the module's other functions. You can write this
+module in Pascal too. Here's the source for our example:<P>
+
+<pre><code class="delphi">library foomod;
+
+{$IFDEF FPC}
+  {$mode objfpc}{$H+}
+{$ENDIF}
+
+uses
+  SysUtils,
+{$IFDEF FPC}
+  ctypes,
+{$ENDIF}
+  PyAPI;
+
+{$DEFINE UNIV_OR_32BIT}
+{$IFNDEF DARWIN}  {Assume OS X library is universal 32/64-bit}
+  {$IFDEF CPUX64}
+    {$UNDEF UNIV_OR_32BIT}
+  {$ENDIF}
+  {$IFDEF CPU64}
+    {$UNDEF UNIV_OR_32BIT}
+  {$ENDIF}
+{$ENDIF}
+
+const
+{$IFDEF UNIV_OR_32BIT}
+  FooLibNameBase = 'foo';
+  {$IFDEF USE_PYTHON3}
+  FooModName = 'foomod_3';
+  {$ELSE}
+  FooModName = 'foomod';
+  {$ENDIF}
+{$ELSE}
+  FooLibNameBase = 'foo64';
+  {$IFDEF USE_PYTHON3}
+  FooModName = 'foomod64_3';
+  {$ELSE}
+  FooModName = 'foomod64';
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF DARWIN}
+  {$linklib foo}
+{$ENDIF}
+
+{$IFNDEF FPC}
+type
+  cint32 = LongInt;
+{$ENDIF}
+
+ //By default, use cdecl on Windows too: if stdcall, MSVC won't link
+ // to 32-bit Delphi/FPC DLL unless it exports decorated names too.
+{$DEFINE USE_CDECL}
+{$IFDEF USE_STDCALL}  //Override and use stdcall?
+  {$UNDEF USE_CDECL}
+{$ENDIF}
+
+function FooGetVal(InParam : cint32) : cint32; {$IFDEF USE_CDECL}cdecl{$ELSE}stdcall{$ENDIF}; external FooLibNameBase;
+
+
+function GetVal(Self : PyObject;
+                Args : PyObject) : PyObject; cdecl;
+var
+  InParam : cint32;
+begin
+  try
+    if PyArg_ParseTuple(Args, 'i', @InParam) = 0 then
+      begin  //Python exception will also be set, eg, OverflowError
+      Result := nil;
+      Exit;
+      end;
+    Result := PyInt_FromLong(FooGetVal(InParam));
+  except
+    on E:Exception do
+      begin
+      PyErr_SetString(PyErr_NewException(FooModName + '.Error', nil, nil), 
+                      PAnsiChar(AnsiString(E.Message)));
+      Result := nil;
+      end;
+  end;
+end;
+
+
+const
+  NumFuncs = 1;
+
+var
+  Methods : packed array [0..NumFuncs] of PyMethodDef;
+
+{$IFDEF USE_PYTHON3}
+  ModuleDef : PyModuleDef;
+
+  {$IFDEF UNIV_OR_32BIT}
+procedure PyInit_foomod_3; cdecl;
+  {$ELSE}
+procedure PyInit_foomod64_3; cdecl;
+  {$ENDIF}
+
+{$ELSE}
+  {$IFDEF UNIV_OR_32BIT}
+procedure initfoomod; cdecl;
+  {$ELSE}
+procedure initfoomod64; cdecl;
+  {$ENDIF}
+{$ENDIF}
+
+begin
+  Methods[0].name := 'GetVal';
+  Methods[0].meth := @GetVal;
+  Methods[0].flags := METH_VARARGS;
+  Methods[0].doc := '';
+
+  Methods[NumFuncs].name := nil;
+  Methods[NumFuncs].meth := nil;
+  Methods[NumFuncs].flags := 0;
+  Methods[NumFuncs].doc := nil;
+
+{$IFDEF USE_PYTHON3}
+  ModuleDef.m_name := FooModName;
+  ModuleDef.m_doc := nil;
+  ModuleDef.m_size := 0;  //?
+  ModuleDef.m_methods := @Methods;
+  ModuleDef.m_reload := nil;
+  ModuleDef.m_traverse := nil;
+  ModuleDef.m_clear := nil;
+  ModuleDef.m_free := nil;
+  PyModule_Create(ModuleDef);
+{$ELSE}
+  Py_InitModule(FooModName, Methods[0]);
+{$ENDIF}
+end;
+
+exports
+{$IFDEF USE_PYTHON3}
+  {$IFDEF UNIV_OR_32BIT}
+  PyInit_foomod_3;
+  {$ELSE}
+  PyInit_foomod64_3;
+  {$ENDIF}
+{$ELSE}
+  {$IFDEF UNIV_OR_32BIT}
+  initfoomod;
+  {$ELSE}
+  initfoomod64;
+  {$ENDIF}
+{$ENDIF}
+ 
+end.
+</code></pre>
+
+The module source can be compiled for both Python 2.7 and 3.5 for both 32- and 64-bits.
+Note that it requires an interface unit that supplies a subset of the Python
+API for Pascal; PyAPI.pas is included with the example source files.<P>
+
+On OS X, we can compile <B>foomod.pas</B> to a universal <B>foomod.so</B>
+module for Python 2.7 that can call both the 32- and 64-bit libraries. 
+Note the use of the <B>.so</B> extension for compiled modules on OS X (and Linux).<P>
+
+<pre><code class="bash">ppc386 -k-framework -kPython -ofoomod.so foomod.pas
+ppcx64 -k-framework -kPython -ofoomod64.so foomod.pas
+lipo -create foomod.so foomod64.so -output foomod.so
+install_name_tool -id ./foomod.so foomod.so
+rm foomod64.so
+</code></pre>
+
+Similarly, to compile <B>foomod.pas</B> to a universal <B>foomod_3.so</B>
+module for Python 3.5:<P>
+
+<pre><code class="bash">ppc386 -dUSE_PYTHON3 -k/Library/Frameworks/Python.framework/Versions/3.5/Python -ofoomod_3.so foomod.pas
+ppcx64 -dUSE_PYTHON3 -k/Library/Frameworks/Python.framework/Versions/3.5/Python -ofoomod64_3.so foomod.pas
+lipo -create foomod_3.so foomod64_3.so -output foomod_3.so
+install_name_tool -id ./foomod_3.so foomod_3.so
+rm foomod64_3.so
+</code></pre>
+
+On Windows, you can compile foomod.pas to four different modules.
+Note the use of the <B>.pyd</B> extension for compiled modules on Windows.<P>
+
+<pre><code>ppc386 -ofoomod.pyd foomod.pas
+ppcrossx64 -ofoomod64.pyd foomod.pas
+ppc386 -dUSE_PYTHON3 -ofoomod_3.pyd foomod.pas
+ppcrossx64 -dUSE_PYTHON3 -ofoomod64_3.pyd foomod.pas
+</code></pre>
+
+We'll wrap the module in a class similar to what we did for .NET above.
+Note that the class imports the correct module based on Python version,
+platform and bitness.<P>
+
+<pre><code class="python"># FooLib.py
+import sys, platform
+if sys.version < "3":  #Python 2.x
+  if ((sys.platform == "win32") or (sys.platform == "linux2")) and \
+     (platform.architecture()[0] == "64bit"):
+    import foomod64 as foomod  #64-bit Python, so use 64-bit module and lib
+  else:
+    import foomod
+else:  #Python 3.x
+  if ((sys.platform == "win32") or (sys.platform == "linux")) and \
+     (platform.architecture()[0] == "64bit"):
+    import foomod64_3 as foomod  #64-bit Python, so use 64-bit module and lib
+  else:
+    import foomod_3 as foomod
+
+
+class FooLib(object):
+  def __init__(self):
+    pass  #Substitute any code here to initialize object
+
+  def __del__(self):
+    pass  #Substitute any code here to uninitialize object
+
+  def GetVal(self, InParam):
+    return foomod.GetVal(InParam)
+</code></pre>
+
+Finally, our Python test code. Note that this code can be run by either 
+C Python or .NET/Mono IronPython. With IronPython, it imports the interop
+assembly created above instead of the Python wrapper class.<P>
+
+<pre><code class="python"># testfoo.py
+import sys
+if (sys.platform == "cli"):  #IronPython?
+  import clr
+  clr.AddReference("Foo.Interop")
+  import Foo.Interop as FooLib
+# Note: If Mono's IronPython does not include standard modules (os, etc.), point
+#  to CPython's with IRONPYTHONPATH environment variable or sys.path.append.
+else:  #CPython
+  import FooLib
+
+try:
+  print(FooLib.FooLib().GetVal(1))
+except:
+  print(sys.exc_info()[0])  #exception name in form module.classname
+  print(sys.exc_info()[1])  #exception error message
+</code></pre>
+
+On OS X, run the test code with the appropriate version of Python. Examples:<P>
+
+<pre><code class="bash">python testfoo.py
+python3 testfoo.py
+arch -32 python testfoo.py
+arch -32 python3 testfoo.py
+</code></pre>
+
+Similarly, test on Windows with the appropriate version of Python. For example,
+if 32-bit Python 2.7 is installed under C:\Tools:<P>
+
+<pre><code>C:\Tools\Python27_32\python.exe testfoo.py
+</code></pre>
+
+Mono includes IronPython, so you can test the module with the interop 
+assembly created above:<P>
+
+<pre><code class="bash">export IRONPYTHONPATH=/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/
+ipy testfoo.py
+</code></pre>
+
+To test with IronPython on Windows:<P>
+
+<pre><code>C:\Tools\IronPython-2.7.5\ipy.exe testfoo.py
+</code></pre>
+
+<HR>
+<A name="Flowchart"></A><H2>Flowchart</H2>
+
+&nbsp;&nbsp;&nbsp;Figure 1. Relationships of foo example's parts.<P>
+<IMG src="FooFlowchart.png" hspace="10" border="1" alt="[Image] goes here"><P>
+
+
+<HR>
+<A name="Resources"></A><H2>Resources</H2>
+
+<H3>Free Pascal</H3>
+
+<A HREF="http://freepascal.org">http://freepascal.org</A><P>
+
+<H3>.NET / Mono</H3>
+
+Windows comes with .NET preinstalled, but for OS X you'll need to install the
+Mono framework. The Mono Runtime Environment (MRE) package is sufficient.<P>
+
+<A HREF="http://www.mono-project.com">http://www.mono-project.com</A><P>
+
+Mono includes C#, F#, VB.NET and IronPython.<P>
+
+<H3>C</H3>
+
+Apple's free Xcode includes Clang and Swift. For Windows, Clang is available here:<P>
+
+<A HREF="http://llvm.org">http://llvm.org</A><P>
+
+MinGW (GCC) for Windows is available here:<P>
+
+<A HREF="http://mingw.org">http://mingw.org</A><P>
+
+Microsoft's Visual Studio Community 2015 edition is free with no restrictions
+on use by individuals:<P>
+
+<A HREF="http://www.visualstudio.com">http://www.visualstudio.com</A>
+
+<H3>Python</H3>
+
+OS X comes with Python 2.7 preinstalled, but for Python 3.5 you'll need to
+install that yourself. You'll also need to install Python for Windows.
+Note that if you want to test both Python 2.7 and 3.5 on Windows
+with both 32- and 64-bit libraries, you'll need to download 
+four different Python installers:<P>
+
+<A HREF="https://www.python.org">https://www.python.org</A><P>
+
+Mono includes IronPython. It's also available for Windows .NET:<P>
+
+<A HREF="http://ironpython.net">http://ironpython.net</A>
+
+<H3>Free IDEs</H3>
+
+<TABLE BORDER=1 CELLPADDING=3>
+
+<TR VALIGN=TOP>
+<TH>IDE</TH>
+<TH>Platforms</TH>
+<TH>Languages</TH>
+<TH>Available from</TH>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>Xamarin Studio</TD>
+<TD>OS X and Windows</TD>
+<TD>C#, F#, VB.NET</TD>
+<TD><A HREF="http://www.monodevelop.com/download">www.monodevelop.com/download</A></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>Xcode</TD>
+<TD>OS X</TD>
+<TD>Swift, C, C++, Objective C</TD>
+<TD>Apple App Store or <A HREF="https://developer.apple.com/resources">developer.apple.com/resources</A></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>Visual Studio Community 2015</TD>
+<TD>Windows</TD>
+<TD>C#, F#, VB.NET, C, C++, Python</TD>
+<TD><A HREF="http://www.visualstudio.com">www.visualstudio.com</A></TD>
+</TR>
+
+<TR VALIGN=TOP>
+<TD>PyCharm Community Edition</TD>
+<TD>OS X, Windows, Linux</TD>
+<TD>Python</TD>
+<TD><A HREF="https://www.jetbrains.com/pycharm">www.jetbrains.com/pycharm</A></TD>
+</TR>
+
+</TABLE><BR>
+
+
+<HR>
+Copyright 2015 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted Feb. 9, 2015; last edited Feb. 14, 2016.<P>
+Code syntax highlighting done with <A HREF="https://highlightjs.org">highlight.js</A>.
+<P>
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<!--Copyright 2016 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Web App Development Overview</TITLE>
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<BODY>
+
+<CENTER>
+<H1>Web App Development Overview</H1>
+<H2>Part 1: One Approach</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#qooxdoo">The qooxdoo JavaScript Framework (and Lazarus)</A><BR>
+<A HREF="#Server">Adding a Pascal Server App</A><BR>
+<A HREF="#Non-visual">Non-visual UI Design</A><BR><BR>
+<A HREF="WebAppOverview_2.html">Part 2: Creating a Map App with Pascal and "Canned" JavaScript</A><BR>
+<P>
+
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+A Web app typically consists of two parts: a client-side app of HTML and JavaScript 
+that runs in the user's browser and a server-side app that can be developed with 
+virtually any programming language. The two apps communicate with each other: 
+the client app makes requests for data and the server app responds to the requests 
+by returning data.<P>
+
+With simple apps that don't need any code to be executed on the server,
+you might be able to get away with developing only the client-side app, 
+assuming you can write a bit of JavaScript. The entire app can then be
+deployed from almost anywhere, including a Dropbox account.<P>
+
+For example, here's the venerable Delphi <B>Fish Facts</B> demo app done as a Web app.
+It's so simple it doesn't need a server-side app, just <B>index.html</B>,
+<B>fishfacts.js</B>, a few <B>CSS</B> files, and the <B>biolife.json</B> and 
+<B>.png</B> files containing the data and pictures it needs. Click a fish
+in the list at the left to see its data and picture.<P>
+
+
+<EMBED SRC="../iApps/fishfacts/index.html" TYPE="text/html" WIDTH=800 HEIGHT=400><P>
+
+(Note that the document you're reading was designed to be viewed in a desktop
+browser. The app itself will adapt to any browser, mobile or desktop. If the
+embedded app above doesn't look right in your mobile browser, click 
+<A HREF="../iApps/fishfacts/index.html" TARGET='_blank'>here</A> to launch it 
+in its own browser window.)
+
+
+<HR>
+<A name="qooxdoo"></A><H2>The qooxdoo JavaScript Framework (and Lazarus)</H2>
+
+The Fish Facts Web app was developed with the <A HREF="http://qooxdoo.org">qooxdoo</A>
+JavaScript framework and the <A HREF="https://sourceforge.net/projects/qxotica">qxotica</A>
+package for the <A HREF="http://www.lazarus-ide.org">Lazarus</A> IDE. Once 
+added to the Lazarus IDE, you can create a qooxdoo app and its boilerplate code 
+(just use File | New), as well as edit and check the syntax of the client app's 
+JavaScript, all from within Lazarus.<P>
+
+Here's what the Fish Facts <B>Application.js</B> code looks like as created
+by qxotica from within Lazarus and used in the app without any modifications:<P>
+
+<EMBED SRC="WebAppOverview_FFAppCode.html" TYPE="text/html" WIDTH=800 HEIGHT=300><P>
+
+If you scroll down in the code, you'll see that it sets up a main page and
+a detail page, as well as a "listener" function that responds to the selection
+of a fish from the list and a function that responds to touching the Back button
+on the detail page when run in a mobile browser.<P>
+
+Here's the Fish Facts app's <B>MainPage.js</B> code. Starting with boilerplate
+code created by qxotica in Lazarus, additional code was added to set up the
+fish list and bind it to the data source:<P>
+
+<EMBED SRC="WebAppOverview_FFMainCode.html" TYPE="text/html" WIDTH=800 HEIGHT=300><P>
+
+Finally, here's the Fish Facts app's <B>DetailPage.js</B> code. Again, starting
+with boilerplate code, additional code was added to lay out the page and bind
+elements of the page to the data source:<P>
+
+<EMBED SRC="WebAppOverview_FFDetailCode.html" TYPE="text/html" WIDTH=800 HEIGHT=300>
+
+
+<HR>
+<A name="Server"></A><H2>Adding a Pascal Server App</H2>
+
+When you choose Run | Compile with a qooxdoo project in Lazarus, it runs
+qooxdoo's <B>generate.py</B> script to check the JavaScript syntax and generate
+the files needed to test the app locally by opening its index.html file
+in a browser. It does this by specifying the "source" job when it runs
+generate.py.<P>
+
+When you're ready to deploy the app, you can run the generate.py script
+with the "build" job to combine your app's JavaScript with the qooxdoo
+framework's JavaScript into a single .js file. The resulting "build" folder
+can then be copied directly to your Web server.<P>
+
+Typically a qooxdoo project will have additional custom jobs. For example, 
+the <B>Unicodum</B> demo app included with the qxotica package includes the 
+following jobs (defined in its config.json file):<P>
+
+<UL>
+<LI>source-usecgi
+<LI>build-usecgi
+<LI>source-usephp
+<LI>build-usephp
+</UL>
+
+You specify a job to indicate which server URL to use. For example, if you specify
+"source-usecgi", the app will use <B>http://localhost/cgi-bin/cgigateway.cgi</B>
+so you can test it locally. If you specify "build-usecgi" when you're ready 
+to deploy, the app will use the URL of your actual Web server (also defined
+in the config.json file). The "usephp" jobs indicate to use the PHP server app 
+rather than the Pascal FCGI app.<P>
+
+Since a qooxdoo client app doesn't "know" anything about the server app and 
+the server app doesn't "know" anything about the client app making the requests
+for data, it's easy to switch between different server apps. The only
+requirement would be that they return the same data.<P>
+
+For example, here's the Pascal source for the main unit of the <B>getunicode</B>
+FCGI server app:<P>
+
+<EMBED SRC="WebAppOverview_GetUniPasCode.html" TYPE="text/html" WIDTH=800 HEIGHT=300><P>
+
+Scrolling down in the code, you can see that the app does only two things:
+if it receives the "blocks" query it returns JSON for the list of Unicode
+code blocks; if it receives a query of the form block=xxx, it returns JSON
+for the specified block's Unicode characters. All data is obtained from
+a Sqlite database on the server and converted to a JSON array.<P>
+
+Connecting the JavaScript client app's UI to the server app is the same as
+it was in Fish Facts. In Fish Facts, the code binds the UI elements to the
+URL of a JSON file on the server; in Unicodum, the code binds the UI elements
+to the URL of a server app that returns JSON. The code looks almost the 
+same. For example, here's the code that binds the master page's list of blocks
+to the server app (compare it the code in MainPage.js above):<P>
+
+<EMBED SRC="WebAppOverview_UniSnippetCode.html" TYPE="text/html" WIDTH=800 HEIGHT=270><P>
+
+
+<HR>
+<A name="Non-visual"></A><H2>Non-visual UI Design</H2>
+
+Here's a screenshot of the Fish Facts project's DetailPage.js file opened 
+in the Lazarus code editor:<P>
+
+<IMG src="WebAppOverview_LazCodeEditor.jpg" hspace="10" border="1" alt="[Image] goes here"><P>
+
+The code shown in the editor lays out the fish's picture and its two 
+lengths (inches and centimeters). Note how there are no pixel values used
+to specify the location and size of the Image and Label controls used.<P>
+
+Instead, the three controls are laid out as follows: The labelLengthIn and
+labelLengthCm controls are added to a vertical "container" control (container2).
+Then the image control and container2 are added to a horizontal control
+(container3). Finally, container3 is added to the page itself. The result
+is the layout you see in the Fish Facts app above.<P>
+
+Note that you can use pixel settings if necessary. Typically you would add
+these as styles to the app's CSS. For example, in the above code, a couple of
+non-breaking spaces are prefixed to the HTML returned for the length labels
+to set off the labels from the picture. If you need something more precise 
+than this, you could try creating a style with a margin-left property and 
+assign it to the label controls via the control's addCssClass method.<P>
+
+Somewhat paradoxically, this kind of "non-visual" UI design often results
+in a better overall look, since it allows the controls to position and resize
+themselves "naturally", flowing and filling in the available space on
+whatever mobile or desktop browser is used to run the app.<P> 
+
+
+<HR>
+Copyright 2016 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted June 11, 2016; last edited Sept. 24, 2016.<P>
+Code syntax highlighting done with <A HREF="https://highlightjs.org">highlight.js</A>.
+<P>
+
+</BODY>
+
+</HTML>
