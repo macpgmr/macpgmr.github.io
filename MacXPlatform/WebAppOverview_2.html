@@ -117,11 +117,10 @@ mobile device).<P>
 <LI>Generate your own QxMap app by entering this at the command line in the folder
     where config.json is located:<P>
 
-    <pre><code class="bash">python generate.py source-dropbox</code></pre>
+    <pre><code class="bash">python generate.py source-noserver</code></pre>
 
     This will generate a version of QxMap that doesn't call a server app. This type of
-    simple app can be posted anywhere on the Web, including a free Dropbox 
-    account (hence the job name).<P>
+    simple app can be posted anywhere on the Web.<P>
 
     Note that if you have the <A HREF="https://sourceforge.net/projects/qxotica">Qx_Proj</A> 
     package installed in Lazarus, you can open the qxmap.lpi project in Lazarus
@@ -218,7 +217,7 @@ QxMap's config.json file exports four "jobs" that you use with
 generate.py to specify which version of QxMap you want to generate. 
 Here's what they look like:<P>
 
-<pre><code class="json">    "source-dropbox" :
+<pre><code class="json">    "source-noserver" :
     {
       "extend" : ["source", "app-settings", "ol-debug", "osm-stamen"],
       "environment" : {
@@ -226,7 +225,7 @@ Here's what they look like:<P>
       }
     },
 
-    "build-dropbox" :
+    "build-noserver" :
     {
       "extend" : ["build", "app-settings", "ol-deploy", "osm-stamen"],
       "environment" : {
@@ -250,14 +249,14 @@ Here's what they look like:<P>
       }
     }</code></pre>
 
-Use the <B>source-dropbox</B> job to generate a version of QxMap for testing locally
-without calling a server. Use the <B>build-dropbox</B> job to generate a version
-of QxMap to deploy to Dropbox (or other site).<P>
+Use the <B>source-noserver</B> job to generate a version of QxMap for testing locally
+without calling a server. Use the <B>build-noserver</B> job to generate a version
+of QxMap to deploy to a Web site.<P>
 
-Note that the Dropbox jobs don't specify a server app URL in the <B>getDataUrl</B>
-setting. However, you <I>can</I> call a server from a Dropbox deployed QxMap as long
-as it communicates over <B>https</B>, not <B>http</B> (since Dropbox sites are https). 
-For a more in-depth explanation, see 
+Note that the noserver jobs don't specify a server app URL in the <B>getDataUrl</B>
+setting. To deploy QxMap that was generated with one of the server jobs
+to an https site, you must also communicate with the server app over <B>https</B>,
+not <B>http</B>. For a more in-depth explanation, see 
 <A HREF="https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content">this</A>.<P>
 
 Use the <B>source-cgi</B> job to generate a version of QxMap for testing locally
@@ -317,7 +316,7 @@ OpenStreetMap also provides map tile servers, but there are
 <A HREF="http://wiki.openstreetmap.org/wiki/Tile_usage_policy">restrictions</A> on their use.
 However, you can test your QxMap with OpenStreetMap (and see how different
 the map looks) by changing <B>osm-stamen</B> to <B>osm-mapnik</B> in the
-appropriate job (for example, source-dropbox) and regenerating QxMap.<P>
+appropriate job (for example, source-noserver) and regenerating QxMap.<P>
 
 To add a map tile server to config.json, just add a new job similar to
 osm-stamen, which looks like this:<P>
@@ -337,7 +336,7 @@ Map tile servers typically support URL templates, where {z} is zoom level,
 <HR>
 Copyright 2016 by Phil Hess.<P>
 macpgmr (at) icloud (dot) com<P>
-First posted Sept. 24, 2016.<P>
+First posted Sept. 24, 2016; last edited Oct. 29, 2016.<P>
 Code syntax highlighting done with <A HREF="https://highlightjs.org">highlight.js</A>.
 <P>
 
