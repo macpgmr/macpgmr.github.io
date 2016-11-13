@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<!--Copyright 2016 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<BODY>
+<pre><code class="pascal">unit ViewControllerU;
+
+{$modeswitch ObjectiveC2}
+
+interface
+
+uses
+  CocoaAll, WebKit;
+
+type
+  TLocationRec = record
+    locname : string;
+    lat     : string;
+    lon     : string;
+    display : string;
+    end;
+
+const
+  qxMapUrl = 'https://macpgmr.github.io/iApps/qxmap/index.html';
+
+  numLocs = 3;
+
+  locations : array[1..numLocs] of TLocationRec =
+   ((locname:'Ouray';     lat:'38.02'; lon:'-107.67'; display:'7,792 feet'),
+    (locname:'Silverton'; lat:'37.81'; lon:'-107.66'; display:'9,308 feet'),
+    (locname:'Telluride'; lat:'37.94'; lon:'-107.81'; display:'8,750 feet'));
+
+type
+  ViewController = objcclass(NSViewController)
+     {IBOutlets}
+    webview1 : WebView;
+    button   : NSButton;
+
+     {Additional fields}
+    saveButtonTitle : NSString;
+
+     {Overridden methods}
+    procedure viewDidLoad; message 'viewDidLoad';  //not in CocoaAll, so add
+    procedure dealloc; override;
+
+     {IBActions}
+    procedure buttonClick(sender: id); message 'buttonClick:';
+
+     {Additional methods}
+    procedure webviewDoneLoading; message 'webviewDoneLoading';
+    function getMapUrl: NSString; message 'getMapUrl';
+    procedure updateMap(urlStr: NSString); message 'updateMap:';
+  end;
+
+
+implementation
+
+procedure ViewController.viewDidLoad;
+begin
+  NSNotificationCenter.defaultCenter.addObserver_selector_name_object(
+   self, objcselector('webviewDoneLoading'),
+   WebViewProgressFinishedNotification, webview1);
+  saveButtonTitle := NSString.alloc.initWithString(button.title);
+end;
+
+
+procedure ViewController.dealloc;
+begin
+  saveButtonTitle.dealloc;
+  inherited dealloc;
+end;
+
+
+procedure ViewController.buttonClick(sender: id);
+begin
+  button.setTitle(NSSTR('Loading map...'));
+  updateMap(getMapUrl);
+end;
+
+
+procedure ViewController.webviewDoneLoading;
+begin
+  button.setTitle(saveButtonTitle);
+end;
+
+
+function ViewController.getMapUrl: NSString;
+var
+  urlStr : string;
+  locNum : Integer;
+begin
+  urlStr := qxMapUrl + '?locations=[';
+  for locNum := 1 to NumLocs do
+    begin
+    urlStr := urlStr + '{"name":"' + locations[locNum].locname + '",' +
+                        '"lat":' + locations[locNum].lat + ',' +
+                        '"lon":' + locations[locNum].lon + ',' +
+                        '"display":"' + locations[locNum].display + '"}';
+    if locNum < NumLocs then
+      urlStr := urlStr + ','
+    else
+      urlStr := urlStr + ']';
+    end;
+  Result := NSSTR(PChar(urlStr));
+end;
+
+
+procedure ViewController.updateMap(urlStr: NSString);
+var
+  url : NSURL;
+  req : NSURLRequest;
+begin
+  url := NSURL.URLWithString(
+          urlStr.stringByAddingPercentEscapesUsingEncoding(NSASCIIStringEncoding));
+  req := NSURLRequest.RequestWithURL(url);
+  webview1.mainFrame.loadRequest(req);
+end;
+
+
+end.
+</code></pre>
+
+</BODY>
+
+</HTML>

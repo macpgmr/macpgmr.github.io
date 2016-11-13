@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<!--Copyright 2016 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Web App Development Overview, Part 3</TITLE>
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<BODY>
+
+<CENTER>
+<H1>Web App Development Overview</H1>
+<H2>Part 3: Using a Web App in a Pascal Desktop App</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#ExternalBrowser">Running in an External Browser</A><BR>
+<A HREF="#EmbeddedBrowser">Running in an Embedded Browser</A><BR>
+<P>
+
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+<A HREF="WebAppOverview_2.html">Part 2</A> showed how to customize a "canned"
+Web app (QxMap) via simple JSON files deployed with the app. But QxMap can
+also be customized by passing data as part of the URL query string.<P>
+
+For example, the embedded app below shows the elevation of several locations, 
+where the location and elevation data was passed in the query string, overriding
+the data in the app's locations.json file. To see the query string, look at this
+page's HTML source or click 
+<A HREF='../iApps/qxmap/index.html?locations=[{"name":"Ouray","lat":38.02,"lon":-107.67,"display":"7,792 feet"},{"name":"Silverton","lat":37.81,"lon":-107.66,"display":"9,308 feet"},{"name":"Telluride","lat":37.94,"lon":-107.81,"display":"8,750 feet"}]' TARGET='_blank'>here</A>
+to launch the app in its own browser window.<P>
+
+<EMBED SRC='../iApps/qxmap/index.html?locations=[{"name":"Ouray","lat":38.02,"lon":-107.67,"display":"7,792 feet"},{"name":"Silverton","lat":37.81,"lon":-107.66,"display":"9,308 feet"},{"name":"Telluride","lat":37.94,"lon":-107.81,"display":"8,750 feet"}]' TYPE="text/html" WIDTH=800 HEIGHT=500><P>
+
+Here's a list of what can be overridden in the URL query string:<P>
+<UL>
+  <LI>locations
+  <LI>mapCenterLon
+  <LI>mapCenterLat
+  <LI>mapZoomLevel
+</UL>
+
+
+<HR>
+<A name="ExternalBrowser"></A><H2>Running in an External Browser</H2>
+
+All well and good, but what about using this app somewhere other
+than a standalone browser, for example in something written in Pascal?<P>
+
+Well, if all you need to do is view the Web app with data supplied by your 
+desktop app, simply launching an external browser and letting it load and
+run the Web app might be sufficient. For example, in Lazarus you could do 
+something like this:<P>
+
+<pre><code class="pascal">procedure TForm1.Button1Click(Sender: TObject);
+var
+  Url : string;
+begin
+  Url := 'https://macpgmr.github.io/iApps/qxmap/index.html?locations=' +
+         '[{"name":"Ouray","lat":38.02,"lon":-107.67,"display":"7,792 feet"},' +
+         '{"name":"Silverton","lat":37.81,"lon":-107.66,"display":"9,308 feet"},' +
+         '{"name":"Telluride","lat":37.94,"lon":-107.81,"display":"8,750 feet"}]';
+{$IFDEF DARWIN}
+  fpSystem('open ''' + Url + '''');
+{$ELSE}
+  Url := StringReplace(Url, '"', '%22', [rfReplaceAll]);
+  OpenURL(Url);
+{$ENDIF}
+end;</code></pre>
+
+Once launched like this, the Web app is independent of your desktop app,
+meaning you can launch more than one instance if you want. When done with
+the Web app, the user just closes the browser tab. In this example,
+the browser functions much like a non-modal report viewer.<P>
+
+
+<HR>
+<A name="EmbeddedBrowser"></A><H2>Running in an Embedded Browser</H2>
+
+This should also be easy, but since Lazarus lacks a cross-platform Web browser
+control, you'll need to come up with your own solution, possibly a 
+platform-specific one.<P>
+
+For example, here's a screenshot of Xcode with the <B>ObjPMap</B> project loaded.
+Since ObjPMap is an Objective Pascal app, it can use any Objective C class,
+so it uses the Cocoa WebView control as an embedded browser to load and run
+QxMap.<P>
+
+<IMG src="WebAppOverview_3_XcodeObjPMap.jpg" hspace="10" border="1" alt="[Image] goes here"><P>
+
+To try out ObjPMap, you have two options:<P>
+<UL>
+  <LI>Download the ObjPMap source from <A HREF="objpmap_src.zip">here</A> and unzip it, then
+      open ObjPMap.xcodeproj in Xcode and choose Product | Run.<P>
+  <LI>Download ObjPMap.dmg from here: <A HREF="ObjPMap.dmg">ObjPMap.dmg</A><BR>
+      This .dmg has not been codesigned, so right-click on ObjPMap.dmg and 
+      choose Open rather than double-clicking it.
+</UL>
+
+You can also browse the view controller code to see how easy it is to use
+a WebView control with Pascal and Xcode:
+<EMBED SRC="WebAppOverview_3_ObjPMapCode.html" TYPE="text/html" WIDTH=800 HEIGHT=300><P>
+
+Notes on ObjPMap:<P>
+
+<OL>
+  <LI>ObjPMap was created using the osx-simple template included with
+      <A HREF="../ObjP/ProjectXC.html">ProjectXC</A>.<P>
+  <LI>Several of the default menus that the template adds to a new app are not 
+      relevant to a simple app like ObjPMap. However, these menus have been 
+      left alone in case someone wants to extend ObjPMap, for example, to support 
+      loading a file containing locations and lat/lon coordinates rather than 
+      just using the app's hard-wired locations.
+</OL>
+
+
+<HR>
+Copyright 2016 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted Nov. 12, 2016.<P>
+Code syntax highlighting done with <A HREF="https://highlightjs.org">highlight.js</A>.
+<P>
+
+</BODY>
+
+</HTML>
