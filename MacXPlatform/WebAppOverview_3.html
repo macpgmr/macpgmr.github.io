@@ -99,8 +99,8 @@ platform-specific one.<P>
 
 For example, here's a screenshot of Xcode with the <B>ObjPMap</B> project loaded.
 Since ObjPMap is an Objective Pascal app, it can use any Objective C class,
-so it uses the Cocoa WebView control as an embedded browser to load and run
-QxMap.<P>
+so it uses the Cocoa <A HREF="https://developer.apple.com/reference/webkit/webview">WebView</A> 
+control as an embedded browser to load and run QxMap.<P>
 
 <IMG src="WebAppOverview_3_XcodeObjPMap.jpg" hspace="10" border="1" alt="[Image] goes here"><P>
 
@@ -126,14 +126,17 @@ Notes on ObjPMap:<P>
       relevant to a simple app like ObjPMap. However, these menus have been 
       left alone in case someone wants to extend ObjPMap, for example, to support 
       loading a file containing locations and lat/lon coordinates rather than 
-      just using the app's hard-wired locations.
+      just using the app's hard-wired locations.<P>
+  <LI>ObjPMap does not use LCL or any intermediate UI code, working directly
+      with the Cocoa frameworks (AppKit, WebKit). As a result, its executable
+      file is quite modest in size, about 240KB.
 </OL>
 
 
 <HR>
 Copyright 2016 by Phil Hess.<P>
 macpgmr (at) icloud (dot) com<P>
-First posted Nov. 12, 2016.<P>
+First posted Nov. 13, 2016.<P>
 Code syntax highlighting done with <A HREF="https://highlightjs.org">highlight.js</A>.
 <P>
 
