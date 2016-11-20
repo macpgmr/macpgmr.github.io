@@ -36,7 +36,7 @@
 <A name="Introduction"></A><H2>Introduction</H2>
 
 These are preliminary notes on some new tools for creating Objective Pascal
-projects for Xcode 7.<P>
+projects for Xcode.<P>
 
 <HR>
 <A name="SettingUp"></A><H2>Setting Up</H2>
@@ -52,23 +52,19 @@ Install version 3.0.0 or later.<P>
 
 <A HREF="projectxc-src.zip">projectxc-src.zip</A><P>
 
-<LI><B>Compile fixup_proj.pas</B><P>
+<LI><B>Compile makeproj.pas</B><P>
 
-fpc fixup_proj
-
-<LI><B>Make sure makeproj.sh script is executable</B><P>
-
-chmod +x makeproj.sh
+fpc makeproj
 
 </OL>
 <HR>
 
 <A name="FirstProject"></A><H2>Creating a New Project</H2>
 
-Run the makeproj.sh script, specifying a template to use and the name of
+Run makeproj, specifying a template to use and the name of
 the project to create. For example, to create an OS X project:<P>
 
-./makeproj.sh templates/osx-simple ~/MyProjects/test1<P>
+./makeproj osx-simple ~/MyProjects/test1<P>
 
 Change ~/MyProjects to point to an existing folder where you want the 
 test1 project folder to be created.<P>
@@ -117,14 +113,16 @@ As an example, here's how to add a button to a new project based on the
  <LI>Now add the equivalent Pascal code to ViewControllerU.pas. <B><I>Tip:</I></B>
      Copy the commented Pascal code in ViewController.h and paste it 
      where indicated in ViewControllerU.pas, removing the "//". Your code
-     should look something like this <A HREF="Xcode-test1.jpg">screenshot</A>.<P>
+     should look something like the screenshot below.<P>
  <LI>Choose Product | Run, then click the button to change its title to Clicked!.
-</UL>
+</UL><BR>
+
+<IMG src="Xcode-test1.jpg" hspace="10" border="1" alt="[Image] goes here"><P>
 
 <HR>
-Copyright 2015 by Phil Hess.<P>
+Copyright 2015-2016 by Phil Hess.<P>
 macpgmr (at) icloud (dot) com<P>
-First posted Oct. 25, 2015; last edited Oct. 29, 2016.
+First posted Oct. 25, 2015; last edited Nov. 20, 2016.
 <P>
 
 </BODY>
