@@ -1,0 +1,249 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2012 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>qxotica tech note 1 - qooxdoo + PhoneGap = native iOS and Android apps</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>qxotica tech note 1</H1>
+<H2>qooxdoo + PhoneGap = native iOS and Android apps</H2>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#iOS">iOS</A><BR>
+<A HREF="#Android">Android</A><BR>
+<A HREF="#Todo">Todo</A><BR>
+<P>
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+At its most basic, PhoneGap is just a native wrapper around JavaScript, 
+HTML and CSS files. The PhoneGap SDK provides support for several mobile
+platforms, notably iOS and Android. It would seem reasonable then that PhoneGap 
+could be used to wrap the client portion of a qooxdoo Web app to create native
+apps for iOS and Android. This tech note describes the steps for doing that,
+using the qxotica Unicodum demo app as an example.<P>
+
+
+<HR>
+<A name="iOS"></A><H2>iOS</H2>
+
+<H3>Requirements</H3>
+
+For this test I used the following:<P>
+
+<UL>
+<LI>PhoneGap SDK 2.1.0 (<A HREF="http://www.phonegap.com/">www.phonegap.com</A>)
+<LI>Xcode 4.5 (free from Mac App Store)
+</UL>
+
+<H3>Create the PhoneGap project</H3>
+
+I found the PhoneGap Getting Started instructions for iOS to be a bit dodgy.
+PhoneGap is now an Adobe product and the codebase is now open-sourced as
+<B>Apache Cordova</B>. Somewhere along the way it looks like the docs did not get 
+a thorough review and they contain some artefacts and other confusing bits.<P>
+
+I unzipped the PhoneGap SDK and moved the entire resulting folder to my
+Tools folder, but did not do anything else to these files. Then from a terminal
+window I changed to where I wanted to create my new PhoneGap project and
+entered a command of this form. Substitute your own path to the PhoneGap SDK and 
+other parameters.<P>
+
+<PRE>
+~/Tools/phonegap-current/lib/ios/bin/create ./UniPGios1 com.myname.unipgios1 UniPGios1
+</PRE>
+
+This created a UniPGios1 folder containing a number of files.<P>
+
+<H3>Prepare the Unicodum client app</H3>
+
+I added two more build job to the Unicodum config.json file so a different URL 
+can be used for the server with a native app compared to what's used with a 
+deployed Web app.<P>
+
+From qxotica's <B>demos/Unicodum/client/unicodum</B> folder, I then entered this:<P>
+
+<PRE>
+./generate.py build-usephp-phonegap
+</PRE>
+
+<B><I>Tip:</I></B> To use the Pascal server app, use the build-usecgi-phonegap
+job. In both cases, you'll need to edit the config.json and enter your 
+server app's URL.<P>
+
+<H3>Add the Unicodum client files to the PhoneGap project</H3>
+
+For this test I just deleted all of the default files in the PhoneGap project's 
+<B>www</B> folder and substituted the contents of Unicodum's
+<B>build-ios</B> folder (created in previous step). The PhoneGap project now
+looks like Figure 1-1.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1-1. Folders and files in a typical PhoneGap iOS project<P>
+<IMG src="phonegap_proj_ios.jpg" hspace="10" border="1" align="left" /><P>
+Cordova.plist - PhoneGap-specific settings you can customize.<P>
+UniPGios1.xcodeproj - Xcode project (see below).<P>
+www - folder with qooxdoo client files created in previous step; this is what 
+PhoneGap is "wrapping".<P>
+
+<BR clear="all"><P>
+
+<H3>Run the PhoneGap app in the iOS Simulator</H3>
+
+<UL>
+<LI>Double-click <B>UniPGios1.xcodeproj</B> to open the PhoneGap project 
+in Xcode.<P>
+<LI>Note that this is actually two Xcode projects in one. The one you're
+interested in is what you opened. But it also includes CordovaLib.xcodeproj
+containing the Objective-C plugin code for accessing native device functionality
+from JavaScript (not covered in this note). In the Xcode Scheme list 
+(upper-left), be sure you select <B>UniPGios1 &gt; iPhone Simulator</B>, not
+<B>CordovaLib &gt; iPhone Simulator</B>.<P>
+<LI>Add your server's domain to the "whitelist" in Cordova.plist (under
+Resources), under the ExternalHosts key. By default PhoneGap blocks all Internet 
+access, so you need to indicate that your server is okay. More info is here:
+<A HREF="http://docs.phonegap.com/en/2.1.0/guide_whitelist_index.md.html">docs.phonegap.com/en/2.1.0/guide_whitelist_index.md.html</A>.<P>
+<LI>Choose Product | Run. Xcode will compile and run the app in the iOS
+Simulator.<P>
+</UL>
+
+<H3>Run the PhoneGap app on an iOS device</H3>
+
+Here's one other place where the docs were not up to date. 
+
+<UL>
+<LI>To compile for an Arm device with Xcode 4.5, make sure that both projects' 
+TARGETS | Build Settings are set to <B>Standard (armv7, armv7s)</B> for ARCHS and 
+<B>armv7 armv7s</B> for VALID ARCHS.<P>
+<LI>On the main project's TARGETS | Summary tab, set the Deployment Target 
+to 4.3 or higher since Xcode 4.5 doesn't support earlier versions of iOS.<P>
+
+<LI>Select your device from the Scheme list and choose Product | Run. Xcode
+will compile, install and run the PhoneGap app on your device.<P>
+</UL>
+
+<H3>How does it look?</H3>
+
+It looks and feels exactly like the Unicodum Web app, since it's running the
+same JavaScript and other files that the Web app is using. It probably starts
+up a bit faster since it doesn't have to download the client files from the
+Web, but this is essentially the same app. You can think of it as a Web app
+that's been "installed" on your device.<P>
+
+Is it "native" enough? That's for you to decide. Note that many iOS apps
+have been developed with PhoneGap:
+<A HREF="http://www.phonegap.com/app">www.phonegap.com/app</A>.<P>
+
+<HR>
+<A name="Android"></A><H2>Android</H2>
+
+<H3>Requirements</H3>
+
+For this test I used the following:<P>
+
+<UL>
+<LI>PhoneGap SDK 2.1.0 (<A HREF="http://www.phonegap.com/">www.phonegap.com/</A>)
+<LI>Android SDK 20.0.3 (<A HREF="http://developer.android.com/sdk/index.html">developer.android.com/sdk/index.html</A>)
+<LI>Eclipse Classic 4.2.1 (<A HREF="http://www.eclipse.org/downloads/">www.eclipse.org/downloads/</A>)
+</UL>
+
+Once installed you also have to download some additional pieces. To avoid 
+clogging my system with unused stuff, I only downloaded the basics with the
+<B>Android SDK Manager</B> (unchecking some of the items it suggested):
+
+<UL>
+<LI>Android SDK Platform-tools
+<LI>SDK Platform
+<LI>ARM EABI v7a System Image
+<LI>Android Support Library (under Extras)
+</UL>
+
+<B><I>Tip:</I></B> While you're at it in the Android SDK Manager, create at 
+least one virtual device (Tools | Manage AVDs) if you want to test your
+PhoneGap app in the Android emulator (but be warned, the emulator is dreadfully 
+slow).<P>
+
+In Eclipse, I followed the instructions and installed the ADT Plugin
+(<A HREF="http://developer.android.com/tools/sdk/eclipse-adt.html">developer.android.com/tools/sdk/eclipse-adt.html</A>).<P>
+
+<H3>Create the PhoneGap project</H3>
+
+Follow the PhoneGap Getting Started instructions. Don't create the dummy 
+index.html file in step 4 since we'll be using the Unicodum client files.<P>
+
+<H3>Prepare the Unicodum client app</H3>
+
+You can use the same client files created for iOS above.<P>
+
+<H3>Add the Unicodum client files to the PhoneGap project</H3>
+
+Copy the contents of Unicodum's <B>build-ios</B> folder into the Eclipse
+project's <B>assets/www</B> folder. The PhoneGap project now looks like
+Figure 1-2.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1-2. Folders and files in a typical PhoneGap Android project<P>
+<IMG src="phonegap_proj_android.jpg" hspace="10" border="1" align="left" /><P>
+www - folder with qooxdoo client files; this is what PhoneGap
+is "wrapping".<P>
+<BR clear="all"><P>
+
+<H3>Run the PhoneGap app in the Android emulator</H3>
+
+Follow the PhoneGap Getting Started instructions.<P>
+
+Note that running the app in the emulator does not appear to install it
+so that you can launch it later independent from Eclipse.<P>
+
+<H3>Run the PhoneGap app on an Android device</H3>
+
+Follow the PhoneGap Getting Started instructions. I don't have access to any 
+Android devices, so I was unable to test this step.<P>
+
+<H3>How does it look?</H3>
+
+It looks identical to the Web app in a browser, but runs very slow in 
+the emulator.<P>
+
+
+<HR>
+<A name="Todo"></A><H2>To-do</H2>
+
+In at least one other way, the PhoneGap Unicodum native app is still very much
+a Web app: that is, it's still dependent on the server app. If the device doesn't
+have Internet access, you won't be able to run the app. Of course, many mobile
+apps are like this: think e-mail, stocks, weather, maps, etc. - many of these
+kinds of apps are of limited use without an Internet connection.<P>
+
+What about moving the server-side Pascal code and database to the device too?
+Well, if your database is large or frequently updated, it may make sense
+to leave it on the server. But in the case of Unicodum, the Unicode data
+in its database is not updated frequently and the database itself is modest
+in size. This would be a good candidate for a standalone native app that
+can be used without an Internet connection. But that's for a future tech
+note.<P>
+
+
+
+<HR>
+Copyright 2012 by Phil Hess.<P>
+macpgmr (at) fastermac (dot) net<P>
+First posted Oct. 14, 2012.
+<P>
+
+</BODY>
+
+</HTML>

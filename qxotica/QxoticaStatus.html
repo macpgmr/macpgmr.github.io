@@ -1,0 +1,560 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2012 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Status of qxotica Tools</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Status of qxotica Tools</H1>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#WhatsNew">What's New</A><BR>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Requirements">Requirements</A><BR>
+<A HREF="#Installing">Installing the qxotica tools</A><BR>
+<A HREF="#GettingStartedUnicodum">Getting started - Unicodum demo app</A><BR>
+<A HREF="#GettingStartedQooxdoo">Getting started - creating a qooxdoo app</A><BR>
+<A HREF="#DevelopingQooxdoo">Developing a qooxdoo app</A><BR>
+<A HREF="#Todo">Future topics and to-do list</A><BR>
+<P>
+
+<HR>
+<A name="WhatsNew"></A><H2>What's New</H2>
+
+<UL>
+<LI>2015-08-23 release (0.0.3)<P>
+  <UL>
+  <LI>The Qx_Proj package has been updated so it compiles with Lazarus 1.4.x.
+      Note that earlier versions of Lazarus are no longer supported.<P>
+  <LI>Unicodum demo app project has been updated for qooxdoo 5.0.
+      Note that the demo no longer supports earlier versions of qooxdoo.<P>
+  </UL>
+
+<LI>2014-04-26 release (0.0.2)<P>
+  <UL>
+  <LI>The Qx_Proj package has been updated so it compiles with Lazarus 1.2.x.
+      Note that earlier versions of Lazarus are no longer supported.<P>
+  <LI>Unicodum demo app project has been updated for qooxdoo 3.5.
+      Note that the demo no longer supports earlier versions of qooxdoo.<P>
+  <LI>Enhancements to the qooxdoo mobile framework, as well as to desktop
+      browsers (eg, Internet Explorer 11), mean that a mobile qooxdoo Web app 
+      can now be used almost anywhere, with the tablet user interface used 
+      in tablet and desktop browsers and the phone UI on smaller devices.
+  </UL>
+</UL>
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+These notes describe the status of the qxotica tools for creating mobile Web 
+apps with the qooxdoo JavaScript framework.<P>
+
+The tools consist of these parts:<P>
+
+<UL>
+<LI>A package that adds to the Lazarus File | New dialog for creating a
+qooxdoo JavaScript app that includes a Lazarus project for managing and editing 
+the app's JavaScript files. This allows you to develop both the JavaScript client
+app and a Pascal server app with the same IDE.<P>
+<LI>A small helper program that allows you to "compile" your qooxdoo app from
+within Lazarus. This helper program runs the app's standard generate.py script. 
+If generate.py detects a JavaScript syntax error, the helper program reformats 
+the  error message so that the Lazarus code editor will jump to the JavaScript 
+file and line where the error is located.<P>
+<LI>The Unicodum demo app. This is a Unicode viewer consisting of a
+qooxdoo-based mobile client and a choice of Pascal (FCGI) or PHP server app.
+This app demonstrates many key qooxdoo features such as mobile UI widgets, CSS
+styles, data binding, master-detail pages, customizing an app's config.json 
+file, and more.
+</UL>
+
+All source code for the tools and demo app is released under the same 
+modified LGPL licence as Free Pascal.<P>
+
+<HR>
+<A name="Requirements"></A><H2>Requirements</H2>
+
+<OL>
+<LI><B>qooxdoo SDK</B><P>
+
+<A HREF="http://qooxdoo.org">qooxdoo.org</A><P>
+
+Download and unzip the qooxdoo SDK anywhere you want. Support for both mobile 
+and desktop browsers is included in the same SDK. (Note that the qxotica tools
+currently only support developing mobile Web apps.)<P>
+
+Note that the qooxdoo tools require Python somewhere on your computer's
+path. Python comes set up on OS X and some Linuxes; if needed, download and 
+install Python 2.x from here: <A HREF="http://python.org/">python.org/</A>.<P>
+
+Note also that qooxdoo now uses Sass to convert .scss files to .css. You can
+download Sass from here: <A HREF="http://sass-lang.com">http://sass-lang.com</A>.<P>
+
+<LI><B>Lazarus IDE and Free Pascal compiler</B><P>
+
+<A HREF="http://www.lazarus.freepascal.org">www.lazarus.freepascal.org</A><P>
+
+<LI><B>Web server</B><P>
+You don't need a Web server if you'll be developing a client-only Web app, 
+but you will need a Web server to develop a Pascal server app for your 
+qooxdoo app. You can use a local Web server installed on your development
+computer.
+<UL>
+<LI><B>Windows.</B> IIS is available for Windows.
+Apache can also be used with Windows, as follows:
+<UL>
+<LI>Download the Apache .msi file and install.
+<LI>Initially don't make any changes to the httpd.conf file that the .msi
+installer creates in Apache's conf folder.
+<LI>If you chose not to install Apache as a service, you can start it manually
+from the console by changing to the Apache bin folder and entering httpd.
+<LI>You will probably need to specify localhost:8080 when running your local apps
+if port 80 is not the default (see the httpd.conf file).
+</UL><P>
+<LI><B>OS X.</B> Apache is included with OS X.
+<UL>
+<LI>To start Apache, open a Terminal and enter:<BR>
+  sudo apachectl start
+<LI>Apache will stay running even after rebooting. To stop it at any time:<BR>
+  sudo apachectl stop
+<LI>Make sure the CGI module is enabled in httpf.conf (in /etc/apache2).
+<LI>Log files are in /var/log/apache2.
+</UL><P>
+<LI><B>Linux.</B> Apache may already be installed on your computer.
+</UL><P>
+
+<LI><B>qxotica source files</B><P>
+
+Check out the files from SourceForge. Change to the directory where you
+want to put the qxotica files and enter this:<P>
+
+<PRE>
+svn checkout svn://svn.code.sf.net/p/qxotica/code/trunk .
+</PRE>
+</OL>
+
+
+<HR>
+<A name="Installing"></A><H2>Installing the qxotica tools</H2>
+
+<OL>
+<LI>Install <B>Qx_Proj package</B> in Lazarus<P>
+
+Start Lazarus, choose Package | Open Package File, and select the 
+<B>qx_proj.lpk</B> file (under qx_proj in the qxotica checkout folder). Click 
+Compile to compile the package, then click Use | Install to install the package
+in Lazarus.<P>
+
+Once installed, you'll see qooxdoo-related items in the Lazarus File | New
+dialog.<P>
+
+<LI>Compile the <B>rungen</B> helper program.<P>
+
+In order to "compile" a qooxdoo app (run its generate.py script) from Lazarus,
+you need to compile the rungen helper program. In Lazarus, choose File | Open
+and select the <B>rungen.lpi</B> file (under utils in the qxotica checkout 
+folder). Choose Run | Compile to compile it.<P>
+</OL>
+
+
+<HR>
+<A name="GettingStartedUnicodum"></A><H2>Getting started - Unicodum demo app</H2>
+
+At this point you <I>could</I> just start Lazarus, choose File | New, 
+select <B>qooxdoo JavaScript App</B>, and enter the required information 
+to create a new mobile Web app. However, if you've never worked with qooxdoo 
+before, the resulting JavaScript files might not make much sense to you. So 
+let's start with the Unicodum demo app.<P>
+
+Once you get the Unicodum client app running in your browser and its Pascal
+server app running under your local Web server, it should look like this
+<A HREF="Unicodum.jpg">screenshot</A>.<P>
+
+<B><I>Note:</I></B> Even though Unicodum is a mobile Web app designed for iOS 
+and Android devices, you can also run it in Firefox or any WebKit-based desktop 
+browser like Safari, iCab or Chrome. It will not work with older versions of IE, 
+however. To fully support both mobile and desktop browsers, you could create two
+different clients since the qooxdoo mobile and desktop widgetsets are different.
+
+<H3>Create the Unicode database</H3>
+
+The Unicodum client app running in your browser will request Unicode data from
+the server app. So the first thing we need to do is create a database of
+Unicode data for use by the server app.<P>
+
+<OL>
+<LI>Download files <B>Blocks.txt</B> and <B>UnicodeData.txt</B> from here:<P>
+
+<A HREF="http://www.unicode.org/Public/UNIDATA/">http://www.unicode.org/Public/UNIDATA/</A><P>
+
+Place both files in the qxotica checkout folder's <B>demos/Unicodum/db</B> folder.<P>
+
+<LI>Compile the <B>cvtuni.pas</B> program in demos/Unicodum/db.<P>
+
+<PRE>
+fpc cvtuni.pas
+</PRE>
+
+<LI>Create the Unicode database.<P>
+
+The Pascal server app expects a SQLite database, so run cvtuni like this:<P>
+
+<PRE>
+cvtuni -s
+</PRE>
+
+This will create file <B>Unicode.sqlitedb</B> from Blocks.txt and
+UnicodeData.txt.<P>
+
+<B><I>Note</I></B>: You must have the SQLite library somewhere on your path 
+to run cvtuni. SQLite comes pre-installed on OS X and some Linuxes, but with 
+Windows you may need to download it: 
+<A HREF="http://www.sqlite.org/">www.sqlite.org/</A>.<P>
+
+If you want to use the PHP server script instead, run cvtuni like this:<P>
+
+<PRE>
+cvtuni -i
+</PRE>
+
+This will create files Blocks.ini and UnicodeData.ini. Note that the 
+following steps assume you'll be running the Pascal server app.<P>
+</OL>
+
+<H3>Compile the Pascal server app</H3>
+
+<OL>
+<LI>Get FCGIApp package.<P>
+
+The Pascal <B>getunicode</B> server app requires the FCGIApp units from the
+ExtPascal project. The source for the FCGIApp and related units is 
+<A HREF="../MacXPlatform/fcgiapp_pkg.zip">here</A> and consists of these files:<P>
+
+<PRE>
+fcgiapp_pkg.lpk
+fcgiapp_pkg.pas
+FCGIApp.pas
+BlockSocket.pas
+ExtPascalClasses.pas
+ExtPascalUtils.pas
+cgigateway.lpi
+CGIGateway.dpr
+</PRE>
+
+<LI>Compile the FCGIApp package.<P>
+
+In Lazarus, choose Package | Open Package File, select <B>fcgiapp_pkg.lpk</B> 
+and click Compile. You don't have to install the package in Lazarus since it's
+not a design package.<P>
+
+<LI>Compile the getunicode server app.<P>
+
+In Lazarus, choose File | Open, navigate to qxotica's <B>demos/Unicodum/pascal_server</B>
+folder and select <B>getunicode.lpi</B>, then choose Run | Compile to compile it.<P>
+
+<LI>Compile CGIGateway app (optional).<P>
+
+If your Web server does not support FCGI (or if you're not sure), you can use
+the intermediate CGIGateway app along with getunicode.<P>
+
+In Lazarus, choose File | Open, navigate to where you checked out or saved
+the ExtPascal files and select <B>cgigateway.lpi</B>. Then choose Run | Compile to 
+compile it.<P>
+
+Copy the resulting <B>cgigateway.cgi</B> file to your Web server's cgi-bin folder
+(on OS X, this is /Library/WebServer/CGI-Executables).<P>
+
+<B><I>Note:</I></B> If your Web server supports FCGI, you would instead copy
+getunicode.fcgi (renamed on Linux or OS X) or getunicode.exe (Windows).
+You would also need to edit the client app's config.json file and change
+cgigateway.cgi to getunicode.fcgi or getunicode.exe.<P>
+
+<LI>Copy Unicode.sqlitedb<P>
+
+Place Unicode.sqlitedb in demos/Unicodum/pascal_server so the server app
+can find its database.<P>
+</OL>
+
+<H3>Prepare the qooxdoo client app</H3>
+
+<OL>
+<LI>Edit the client app's qooxdoo path.<P>
+
+With a text editor, navigate to qxotica's <B>demos/Unicodum/client/unicodum</B> 
+folder and open file <B>config.json</B>. 
+
+Scroll down a bit and look for QOOXDOO_PATH. Change its value to the path
+to your qooxdoo SDK.<P>
+
+<LI>Generate the client app's unicodum.js script.<P>
+
+In Lazarus, navigate to qxotica's <B>demos/Unicodum/client/unicodum/source/class/unicodum</B>
+folder and open <B>unicodum.lpi</B>.<P>
+
+Choose Run | Compile to run the client project's generate.py script, which
+will generate the unicodum.js script in the unicodum/source/script folder.<P>
+
+<B><I>Important!</I></B> Don't be alarmed if this takes a couple minutes.
+The generate.py script creates a large cache the first time it's run. 
+Subsequent runs will take only a few seconds.<P>
+</OL>
+
+<H3>Run Unicodum</H3>
+
+<OL>
+<LI>Open the Pascal <B>getunicode.lpi</B> project in Lazarus as described above, 
+but this time choose Run | Run. The server app will run and wait for requests 
+from the client.<P>
+
+<LI>Double-click <B>index.html</B> in qxotica's <B>demos/Unicodum/client/unicodum/source</B>
+folder or open it manually in your browser. If the page doesn't display a list 
+of Unicode blocks, review the above steps for mistakes.<P>
+
+<LI><B><I>Windows note:</I></B> As indicated above, if the app doesn't work
+you may need to change its URL to specify <B>localhost:8080</B>. With a text editor,
+open the client app's config.json file and edit the <B>uniurl</B> setting under
+<B>source-usecgi</B>.
+</OL>
+
+<H3>(What about the PHP server?)</H3>
+
+If your Web server supports PHP, you can test the <B>getunicode.php</B> script in
+qxotica's <B>demos/Unicodum/php_server</B> folder. This script is functionally
+equivalent to the Pascal getunicode program.<P>
+
+To tell the client app to use the PHP server script, you'll need to do two
+things:<P>
+
+<OL>
+<LI>With a text editor, open the client app's config.json file and edit the
+<B>uniurl</B> setting under <B>source-usephp</B>. This setting needs to point
+to where getunicode.php will be located on your Web server.<P>
+
+<LI>Open unicodum.lpi in Lazarus and choose Project | Project Options. Click
+Compilation and change the Execute before Command's last parameter from 
+<B>source-usecgi</B> to <B>source-usephp</B>. Close the dialog and choose 
+Run | Compile to refresh the unicodum.js script.<P>
+</OL>
+
+
+<HR>
+<A name="GettingStartedQooxdoo"></A><H2>Getting started - creating a qooxdoo app</H2>
+
+<H3>Creating the qooxdoo app</H3>
+
+<UL>
+<LI>In Lazarus, choose File | New and select <B>qooxdoo JavaScript App</B>
+under Project.<P>
+<LI>Fill in the required information. Note that the <B>Type of Browser</B> 
+control is disabled since only mobile apps are currently supported.<P>
+<LI>If you leave the <B>Master-Detail</B> box unchecked, Lazarus will create a 
+simple one-page app. To add pages, choose File | New and select <B>qooxdoo 
+JavaScript Page (Mobile)</B>.<P>
+<LI>If you check the <B>Master-Detail</B> box, Lazarus will create a basic 
+two-page master-detail app, where the master page contains a list whose items 
+you supply and the detail page is used to display information about a selected
+item. Look in the generated code for comments (<B>//&lt;--</B>) indicating where 
+you need to add code.<P>
+<LI>When you click OK, Lazarus will run qooxdoo's standard create-application.py
+script, add boilerplate code to the resulting JavaScript files, and also create 
+a Lazarus project for managing and editing the JavaScript files.<P>
+<LI><B><I>Important!</I></B> If Lazarus throws a "division by zero" exception
+after creating the qooxdoo project, for now just click OK to ignore the
+exception - this appears to be a bug in Lazarus.<P>
+</UL>
+
+<H3>A qooxdoo app's folder structure</H3>
+
+Figure 1 shows the Unicodum demo app's folders and files.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1. Folders and files in a typical qooxdoo app.<P>
+<IMG src="qooxdoo_app_folders.jpg" hspace="10" border="1" align="left" /><P>
+config.json - this file defines the "jobs" that generate.py can do; since
+Unicodum can use two different server apps, custom jobs in this file
+define the URLs for them.<P>
+
+generate.py - when you "compile" a qooxdoo app in Lazarus, this script is run
+to generate the files under script (below).<P>
+
+license.txt - this file was added for Unicodum; not created for new app.<P>
+
+Manifest.json - information about the app.<P>
+
+<B>Under source/class:</B><P>
+
+Application.js - a qooxdoo mobile app is a loosely bound collection of pages
+managed by this file.<P>
+
+page - The Unicodum app has four pages, each in its own JavaScript file in
+this folder.<P>
+
+unicodum.lpi - Lazarus project info file; open this in Lazarus to edit
+the app's JavaScript files.<P>
+
+index.html - double-click this file to load the client app into your browser.<P>
+
+<B>Under source/resource:</B><P>
+
+styles.css - add CSS styles to this file for use with widgets in your pages.
+(Edit: qooxdoo now looks for your styles in _styles.scss in source/theme/appname/scss.)<P>
+
+If you have additional local files that your app needs (images, JSON, etc.),
+place them in the project's folder under resource.<P>
+
+<B>Under source/script:</B><P>
+
+Files generated by generate.py are placed here.<P>
+
+<BR clear="all"><P>
+
+<H3>Preparing to run a qooxdoo app</H3>
+
+<UL>
+<LI>Before running a qooxdoo app, choose Run | Compile in Lazarus. This will 
+save any changes to the app's files and then run the app's generate.py script. 
+If the script detects a JavaScript syntax error, Lazarus will display the error 
+in its Messages windows and jump to the file and line where the error is located.<P>
+
+<LI><B><I>Important!</I></B> As indicated above, don't be alarmed if "compiling"
+takes a couple minutes the first time you do it. The generate.py script creates
+a large cache to speed up subsequent runs; the next run should only take a few
+seconds.<P> 
+<LI>You can also refresh your app manually by running the generate.py script
+and specifying the "source" job:<P>
+<PRE>
+generate.py source
+</PRE>
+<LI>Note that since the Unicodum demo app can use either of two server apps,
+its config.json file contains additional custom jobs for specifying which
+server app to use. With Unicodum, you would specify the "source-usecgi" or
+"source-usephp" job. You can define additional custom jobs for your apps
+as well - open and review Unicodum's config.json for examples. To specify a
+custom source job in Lazarus, choose Project | Project Options, click
+Compilation and edit the Execute before Command's last parameter.<P>
+</UL>
+
+<H3>Running a qooxdoo app</H3>
+
+<UL>
+<LI>Open the index.html file in the app's source folder to run the app in 
+your browser.<P>
+
+<LI>Since JavaScript is a dynamic, loosely typed language, many errors will
+only be caught at runtime. When debugging a qooxdoo app, it's useful to open
+your browser's JavaScript console to view debug and error messages. You can
+also click and hold on the app's navigation bar to view qooxdoo log messages.<P>
+
+<LI>Most desktop browser provide optional add-ins that are useful for 
+debugging. For example, Firefox provides Firebug, etc.
+</UL>
+
+<H3>Deploying a qooxdoo app</H3>
+
+<UL>
+<LI>Run the generate.py script and specify the "build" job:<P>
+<PRE>
+generate.py build
+</PRE>
+This will create a single .js file containing your JavaScript code and the
+qooxdoo widget code it uses. By default whitespace and comments will be 
+removed to reduce the file's size and variable names will be obfuscated.<P>
+<LI>Note that since the Unicodum demo app can use either of two server apps,
+its config.json file contains additional custom jobs for specifying which
+server app to use. With Unicodum, you would specify the "build-usecgi" or
+"build-usephp" job.<P>
+<LI>The build job's default mobile target is iOS, so it creates a folder
+named <B>build-ios</B>. Rename and copy this folder to a Web server to deploy 
+the app.<P>
+<LI>Note that the build-ios folder will contain many small icon and image files
+used by the various qooxdoo widgets. By including all of these files in your 
+initial deployment, this simplifies updating your deployed app. In most cases, 
+if you make changes to your app, you only need to redeploy its updated .js file 
+and any resource files that you've modified.<P>
+</UL>
+&nbsp;&nbsp;&nbsp;Figure 2. Folders and files in a typical qooxdoo deployment.<P>
+<IMG src="qooxdoo_app_deploy.jpg" hspace="10" border="1" align="left" /><P>
+<BR clear="all"><P>
+
+
+<HR>
+<A name="DevelopingQooxdoo"></A><H2>Developing a qooxdoo app</H2>
+
+<H3>Documentation</H3>
+
+<UL>
+<LI>The qooxdoo manual, <B>qooxdoo.pdf</B>, is included with the SDK under
+documentation/manual. It's also online at 
+<A HREF="http://qooxdoo.org/docs">qooxdoo.org/docs</A>.<P>
+<LI>The qooxdoo API viewer is online at 
+<A HREF="http://demo.qooxdoo.org/current/apiviewer/#qx">demo.qooxdoo.org/current/apiviewer/#qx</A>.
+The mobile widgets are listed under qx.ui.mobile. To help in deciding which
+mobile widgets to use, try out the qooxdoo Mobile Showcase app:
+<A HREF="http://demo.qooxdoo.org/devel/mobileshowcase-ios/index.html#%2F">demo.qooxdoo.org/devel/mobileshowcase-ios/index.html</A>.<P>
+<LI>JavaScript references are everywhere. Here are two:
+<A HREF="https://developer.mozilla.org/en-US/docs/JavaScript">developer.mozilla.org/en-US/docs/JavaScript</A> 
+and <A HREF="http://www.w3schools.com/js/default.asp">www.w3schools.com/js/default.asp</A>.<P>
+<LI>Most text formatting in a Web app is done via CSS styles, either in-line
+or by specifying a style for a widget. A CSS reference is here:
+<A HREF="http://www.w3schools.com/cssref/default.asp">www.w3schools.com/cssref/default.asp</A>.
+See the Unicodum demo app's code for examples of both kinds of styles.<P>
+<LI>When developing an app, you'll often be running the client app locally while 
+querying an online server. This type of cross-domain Ajax call is not permitted 
+by the browser. Instead, you can use JSON-P if the server app supports it.
+JSON-P documentation is here: <A HREF="http://www.json-p.org/">www.json-p.org/</A>. 
+See the Pascal and PHP getunicode server apps for examples of how to implement 
+JSON-P.<P>
+<LI>To simulate various iOS devices, run your app in the
+iPhone Simulator included with Xcode for OS X. To simulate Android devices,
+run your app in the Android emulator included with the Android SDK.<P> 
+</UL>
+
+<H3>JavaScript gotchas</H3>
+
+Here are a few things that Pascal programmers need to remember when starting
+out with JavaScript.
+
+<UL>
+<LI>Remember that JavaScript is case-sensitive.
+<LI>Use "==" for equality, not "=". "=" is reserved for assignment.
+<LI>Use "!=" for not-equal, not "&lt;&gt;".
+<LI>Use "&&" instead of "and" and "||" instead of "or".
+<LI>Always put parentheses ( ) around an if statement's clause.
+<LI>Use "return" to exit a function, optionally returning the function result.
+<LI>To call a function without passing any arguments, be sure to include an
+empty () after the function name.
+</UL>
+
+<HR>
+<A name="Todo"></A><H2>Future topics and to-do list</H2>
+
+<OL>
+<LI><S>Support for desktop browser apps (if interest warrants).</S> --> In general,
+qooxdoo mobile apps now work fine in desktop browsers too.<P>
+<LI><S>Discuss converting qooxdoo app to native mobile app via PhoneGap.</S> 
+--> See tech note 1 (<A HREF="QxoticaTechNote1.html">QxoticaTechNote1.html</A>).<P>
+<LI>Discuss various offline and online storage options available to Web apps
+(session, local, Web SQL Database, IndexedDB, Dropbox).<P>
+</OL>
+
+<HR>
+Copyright 2012 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted Oct. 3, 2012; last edited March 18, 2017.
+<P>
+
+</BODY>
+
+</HTML>
