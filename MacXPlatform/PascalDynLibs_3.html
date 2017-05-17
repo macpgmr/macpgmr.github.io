@@ -377,8 +377,7 @@ To try out SwiftCast, you have two options:
   <LI>Open SwiftCast.xcodeproj in Xcode and choose Product | Run. Make sure 
       you've compiled the ndfd library beforehand.
   <LI>Download SwiftCast.dmg from here: <A HREF="SwiftCast.dmg">SwiftCast.dmg</A><BR>
-      This .dmg has not been codesigned, so right-click on SwiftCast.dmg and 
-      choose Open rather than double-clicking it.
+      Double-click SwiftCast.dmg. Or control-click it and choose Open.
 </UL>
 
 A screenshot of the SwiftCast project in Xcode is here: 
@@ -411,9 +410,9 @@ Notes on SwiftCast:<P>
 
   <LI>SwiftCast loads a local copy of an HTML file into its WebView control,
       looking for it in its Resources folder using this bit of code:
-      <pre><code class="bash">    let htmlPath = NSBundle.mainBundle().resourcePath! + "/viewForecast.bing.6.2.html"</code></pre>
+      <pre><code class="bash">    let htmlPath = Bundle.main.resourcePath! + "/viewForecast.bing.6.2.html"</code></pre>
       But there's no reason why this file couldn't be loaded by specifying an
-      http:// location. That would allow you to update the HTML that's loaded
+      https:// location. That would allow you to update the HTML that's loaded
       without needing to update the app itself.<P>
 
   <LI>Several of the default menus that Xcode's template adds to a new app
@@ -437,11 +436,12 @@ Adding the ndfd library to an Xcode Swift project is fairly straightforward:<P>
   <LI>In Build Settings, under SWIFT_OBJC_BRIDGING_HEADER, specify
       SwiftCast/Bridging-Header.h.
   <LI>In Build Phases, under Link Binary With Libraries, add libndfd.dylib.
-  <LI>In Build Phases, under Copy Bundle Resources, add libndfd.dylib.
-  <LI>In Build Phases, add a Run Script that fixes up the app bundle's
+  <LI>In Build Phases, add a Copy Files phase and add libndfd.dylib, copying it
+      to Frameworks.
+  <LI>In Build Phases, add a Run Script phase that fixes up the app bundle's
       libndfd.dylib and the executable that loads it:
-      <pre>install_name_tool $TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/libndfd.dylib -id @executable_path/../Resources/libndfd.dylib
-install_name_tool $TARGET_BUILD_DIR/$EXECUTABLE_PATH -change ./libndfd.dylib @executable_path/../Resources/libndfd.dylib</pre>
+      <pre>install_name_tool $TARGET_BUILD_DIR/$FRAMEWORKS_FOLDER_PATH/libndfd.dylib -id @rpath/libndfd.dylib
+install_name_tool $TARGET_BUILD_DIR/$EXECUTABLE_PATH -change ./libndfd.dylib @rpath/libndfd.dylib</pre>
 </UL>
 
 
@@ -721,7 +721,7 @@ Notes on QxCast:<P>
 <HR>
 Copyright 2015 by Phil Hess.<P>
 macpgmr (at) icloud (dot) com<P>
-First posted March 15, 2015; last edited Oct. 16, 2016.
+First posted March 15, 2015; last edited May 16, 2017.
 <P>
 
 </BODY>
