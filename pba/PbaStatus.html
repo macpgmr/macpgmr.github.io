@@ -1,0 +1,373 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2012 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Developing for Android with Pascal and Eclipse</TITLE>
+<STYLE type="text/css">
+  BODY { font: 12px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Developing for Android with Pascal and Eclipse</H1>
+</CENTER>
+
+<HR>
+<H2>Contents</H2>
+<A HREF="#Introduction">Introduction</A><BR>
+<A HREF="#Requirements">Requirements</A><BR>
+<A HREF="#Installation">Installation</A><BR>
+<A HREF="#GettingStarted">Getting started</A><BR>
+<A HREF="#Tips">Tip and notes</A><BR>
+<P>
+
+<HR>
+<A name="Introduction"></A><H2>Introduction</H2>
+
+These notes describe how to set up Eclipse to do Android development with
+Pascal. Two additional tools provide the Pascal support:<P>
+
+<OL>
+<LI>Free Pascal's JVM compiler. This compiler emits Java byte code and creates
+normal Java .class files when it compiles Pascal source files. A Pascal unit
+for accessing the android.jar runtime library is included.<P>
+<LI>Pascal Builder for Android (PBA). This is a simple console app that helps 
+integrate Pascal with Eclipse. When Eclipse builds a project, it runs a
+series of "builders". PBA is just a custom builder that you add to your
+Android project. When you build an Android project, PBA does the following:<P>
+<UL>
+<LI>For each "activity" that you add to your Android project, PBA creates an
+equivalent Pascal unit the next time it's run.<P>
+<LI>Parses the Android project's R.java resource file and creates the equivalent 
+Pascal unit (Rjava.pas).<P>
+<LI>Launches FPC's JVM compiler with the appropriate paths and switches
+to compile your Android project's Pascal files.
+</UL>
+</OL>
+
+
+<HR>
+<A name="Requirements"></A><H2>Requirements</H2>
+
+<OL>
+<LI>Free Pascal JVM compiler.<P>
+
+<A HREF="http://wiki.freepascal.org/FPC_JVM">http://wiki.freepascal.org/FPC_JVM</A>
+
+<LI>Pascal Builder for Android source code.<P>
+
+<A HREF="pba.zip">pba.zip</A>
+
+<LI>Android SDK.<P>
+
+<A HREF="http://developer.android.com/sdk/index.html">developer.android.com/sdk/index.html</A>
+
+<LI>Eclipse Classic.<P>
+
+<A HREF="http://www.eclipse.org/downloads">www.eclipse.org/downloads</A>
+
+</OL>
+
+
+<HR>
+<A name="Installation"></A><H2>Installation</H2>
+
+<OL>
+
+<LI>FPC JVM compiler.<P>
+
+Complete build instructions are at <A HREF="http://wiki.freepascal.org/FPC_JVM/Building">wiki.freepascal.org/FPC_JVM/Building</A>, 
+but here's the short version. Note that this assumes you already have a non-JVM
+FPC compiler installed (for example, stable version 2.6.0).
+<UL>
+<LI>Check out the FPC trunk source from its Subversion repository. Change to the 
+directory where you want to put the checked out source files and enter this:<P>
+<PRE>svn co http://svn.freepascal.org/svn/fpc/trunk .</PRE><P>
+<LI>Download <A HREF="ftp://ftp.freepascal.org/pub/fpc/contrib/jvm/fpcjvmutilities.zip">ftp://ftp.freepascal.org/pub/fpc/contrib/jvm/fpcjvmutilities.zip</A>,
+unzip it, and place <B>jasmin.jar</B> somewhere on your path.<P>
+<LI>Change to the <B>utils/fpcm</B> directory in your FPC checkout and build
+<B>fpcmake</B>:
+<PRE>make clean all</PRE>
+Then move the resulting fpcmake executable to anywhere outside the checkout directory.<P>
+<LI>Build FPC JVM compiler. On my Mac, I put this in a script file (.sh) for 
+ease of running it again later:<P>
+<PRE>make_path=/Users/Phil/Tools/fpctests/fpcmake
+install_path=/Users/Phil/Tools/fpcjvm
+make FPCMAKE=$make_path CROSSOPT="-O2 -g" CPU_TARGET=jvm OS_TARGET=android INSTALL_PREFIX=$install_path all crossinstall</PRE>
+When the make is done, you'll have the FPC JVM compiler (<B>ppcjvm</B>),
+the compiled <B>System</B> unit, and the compiled <B>androidr14</B> unit that 
+provides access to the entire Android RTL.<P>
+</UL>
+
+<LI>Pascal Builder for Android.<P>
+
+<UL>
+<LI>Compile PBA like this using a non-JVM FPC compiler:<P>
+<PRE>fpc pba</PRE>
+<LI>If you have Lazarus, you can also compile PBA there. In Lazarus, choose
+File | Open and select the <B>pba.lpi</B> file. Choose Run | Compile to compile it.<P>
+</UL>
+
+<LI>Android SDK.<P>
+
+Both the Android tools and Eclipse assume that you have Java installed
+on your development computer. If not, download the JDK from 
+<A HREF="http://www.oracle.com/technetwork/java/index.html">www.oracle.com/technetwork/java/index.html</A>.
+Note that I did not need to install any additional Java software on my Mac;
+you may not need to download the JDK either.<P>
+
+Once installed you also have to download some additional pieces. I only 
+downloaded the basics using the SDK's <B>Android SDK Manager</B>:
+
+<UL>
+<LI>Android SDK Platform-tools
+<LI>SDK Platform
+<LI>ARM EABI v7a System Image
+<LI>Android Support Library (under Extras)
+</UL><P>
+
+<B><I>Tip:</I></B> While you're at it in the Android SDK Manager, create at 
+least one virtual device (Tools | Manage AVDs) if you want to test your
+apps in the Android emulator (but be warned, the emulator is dreadfully 
+slow).<P>
+
+<LI>Eclipse.<P>
+
+Once you have Eclipse installed, follow the instructions and install the ADT Plugin
+(<A HREF="http://developer.android.com/tools/sdk/eclipse-adt.html">developer.android.com/tools/sdk/eclipse-adt.html</A>).<P>
+
+<LI>Add PBA to Eclipse as an external tool.<P>
+
+<UL>
+<LI>Start Eclipse and choose <B>Run | External Tools | External Tools Configuration</B>.<P>
+<LI>Select <B>Program</B> and click the New icon (+).<P>
+<LI>In <B>Name</B>, enter something suitable like <B>Pascal Builder</B>.<P>
+<LI>In <B>Location</B>, enter the complete path to <B>pba</B> per 
+installation step 2 above. On my Mac, I entered:<P>
+<PRE>/Users/phil/Tools/jvmtests/pba</PRE>
+<LI>In <B>Arguments</B>, enter three items, separated by spaces. The items
+are (i) path to ppcjvm (see step 1 above), (ii) macro placeholder for path 
+to the Android project, and (iii) the FPC -FD switch with the directory where 
+you placed jasmin.jar. On my Mac, I entered:<P>
+<PRE>~/Tools/fpcjvm/lib/fpc/2.7.1/ppcjvm ${project_loc} -FD/usr/local/bin</PRE>
+<B><I>Tip:</I></B> You can include additional FPC switches if necessary
+(for example, additional -Fu switches).<P>
+</UL>
+
+You will only have to enter this information once. For each Android project, 
+you will simply import this external tool as an Eclipse "builder".
+</OL>
+
+
+<HR>
+<A name="GettingStarted"></A><H2>Getting started</H2>
+
+To test your installation, create a simple Android app. You won't have to do
+any coding for this test.<P>
+
+<OL>
+<LI>In Eclipse, choose <B>File | New | Project</B>.<P>
+<LI>In the New Project dialog, select <B>Android Application Project</B> and
+click Next.<P>
+<LI>On the New Android Application page, fill in the following:<P>
+<UL>
+<LI>Application Name. For example, <B>Tooltest</B>.<P>
+<LI>Project Name. You can use the supplied default.<P>
+<LI>Package Name. You can use the supplied default for a test app. Normally
+you would enter the reverse domain name of your company or project plus
+an application identifier (for example, com.mycompany.myapp). The package
+name must be unique and is used throughout the project, including as the 
+"namespace" in your project's Pascal units.
+</UL><P>
+Click Next.<P>
+<LI>Click Next again to skip past the Configure Launcher Icon page.<P>
+<LI>On the Create Activity page, select <B>BlankActivity</B> and click Next.<P>
+<LI>On the New Blank Activity page, accept the defaults for Activity Name 
+(<B>MainActivity</B>) and Layout Name (<B>activity_main</B>) and click Finish.<P>
+<LI>Once Eclipse has created the new Android project, you'll see the project's
+structure in Package Explorer. It should look like Figure 1.<P>
+
+&nbsp;&nbsp;&nbsp;Figure 1. Folders and files in a typical Eclipse Android project.<P>
+<IMG src="fig1_eclipse_project.jpg" hspace="10" border="1" align="left" /><P>
+src - this is where the project's Java source files would go, but since we're
+developing with Pascal you won't use this folder.<P>
+gen - each time you build the project, Eclipse extracts resource identifiers
+from all of the project's XML resource files and creates a new <B>R.java</B> 
+file; PBA converts R.java to <B>Rjava.pas</B> each time it's updated.<P>
+assets - database files, images, etc. can be placed here for deployment
+with your app.<P>
+bin - compiled files (<B>.class</B> extension) are placed here under 
+<B>classes</B>; the <B>.apk</B> file that you deploy is created here too.<P>
+libs - place any <B>.jar</B> files that your app needs here; you can create a 
+.jar file from compiled Pascal .class files as well as from compiled Java .class 
+files.<P>
+res - XML resource files go here; note how Eclipse has opened the
+<B>activity_main.xml</B> resource file in the Graphical Layout designer;
+you can also switch to a raw XML editor to view and edit a layout
+(see Figure 2).<P>
+AndroidManifest.xml - project's manifest file; normally you let Eclipse
+manage this file.
+<BR clear="all"><P>
+
+&nbsp;&nbsp;&nbsp;Figure 2. Eclipse layout designer.<P>
+<IMG src="fig2_eclipse_designer.jpg" hspace="10" border="1" /><P>
+
+<LI>Add PBA as a builder to your project.<P>
+
+<UL>
+<LI>In Eclipse, choose <B>Project | Properties</B>.<P>
+<LI>In the Properties dialog, select <B>Builders</B>. Note the list of builders 
+that are already part of your project.<P>
+<LI>Click <B>Import</B> and select Pascal Builder that you defined as an 
+external tool above.<P>
+<LI>Select Pascal Builder and click <B>Up</B> to move it above Android Package 
+Builder in the build sequence.<P>
+</UL>
+
+<LI>Build your project. If you have the Eclipse console open you should see
+familiar FPC output there.<P>
+
+<B><I>Tip:</I></B> If you get an error message, it may mean that you don't 
+have PBA configured properly as an external tool. If you edit Pascal Builder's 
+configuration, you'll need to delete the project's Pascal Builder and import it 
+again to use the updated configuration.<P>
+
+<LI>Refresh Eclipse.<P>
+
+To see your project's Pascal files (created by PBA), select your project in
+Package Explorer and choose <B>File | Refresh</B>. You should now see a <B>pas</B>
+folder in Package Explorer. Expand it and select <B>MainActivity.pas</B>. Right-click
+it and choose <B>Open With | Text Editor</B> to open it in Eclipse. You can
+also open <B>Rjava.pas</B> to see your project's resource identifiers. Note 
+how MainActivity.pas references two resource identifiers.<P>
+
+<B><I>Tip:</I></B> If you double-click a Pascal file, it will open with 
+whatever program you have associated with the .pas extension. On my Mac, this
+is TextWrangler. If you prefer, you can then edit your source with a more
+familiar editor instead of in Eclipse's editor (see Figure 3).<P>
+
+&nbsp;&nbsp;&nbsp;Figure 3. Pascal boilerplate code for Android "activity" (as viewed in TextWrangler).<P>
+<IMG src="fig3_activity_source.jpg" hspace="10" border="1" /><P>
+
+<LI>Run app in Android emulator.<P>
+
+Right-click your project in Package Explorer and choose <B>Run As | Android Application</B>.
+Eclipse will launch the Android emulator and, after a lengthy delay, your app
+will start, displaying "Hello world!". Press the Esc key to exit the app in
+the emulator.
+</OL>
+
+
+<HR>
+<A name="Tips"></A><H2>Tips and notes</H2>
+
+<OL>
+<LI>You now have access to practically the entire Eclipse and Android toolsets.
+This includes not only the complete set of Android widgets and a graphical
+designer for laying them out, but also access to the complete Android runtime.
+To get a sense of the magnitude of this runtime, open file <B>androidr14.inc</B>
+in your FPC checkout folder's <B>rtl/android/jvm</B> directory with a text
+editor. This file is over 50,000 lines long and it's provided for you with FPC 
+ready to use as the compiled <B>androidr14</B> unit - you don't have to do 
+anything else except add it to your units' uses statements.<P>
+
+<LI>Since FPC does not support dot notation for unit names, you'll see in
+androidr14.inc that Java class names have been abbreviated using the first letter
+of each package level plus the class name. For example, the Android class
+<B>SQLiteDatabase</B> in the <B>android.database.sqlite</B> package is named 
+<B>ADSSQLiteDatabase</B> for use with Pascal. If you look at its complete Pascal 
+declaration (in androidr14.inc), you can see the external package and class
+it refers to:<P>
+<PRE>ADSSQLiteDatabase = class external 'android.database.sqlite' name 'SQLiteDatabase' (ADSSQLiteClosable)</PRE>
+
+<LI>You use a Java class the same way you use Pascal classes. For example, 
+to use the SQLiteDatabase class to open a SQLite database, you would write
+something like this:<P>
+
+<PRE>
+var
+  FileName : string;
+  Db       : ADSSQLiteDatabase;
+begin
+  FileName := '/data/data/com.mycompany.myapp/databases/mydb.sqlitedb';
+  Db := ADSSQLiteDatabase.openDatabase(FileName, nil, ADSSQLiteDatabase.OPEN_READONLY);
+</PRE>
+
+In this case, openDatabase is a class function that returns an instance
+of the SQLiteDatabase class if the specified database is opened successfully.<P>
+
+<LI>It's a good idea to have androidr14.inc open while programming so you can
+quickly find an abbreviated class name or see the Pascal signature of a method
+you want to call.<P>
+
+<LI>For descriptions of a class's methods, refer to the Android on-line
+documentation, for example:<P>
+
+<A HREF="http://developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html">developer.android.com/reference/android/database/sqlite/SQLiteDatabase.html</A><P>
+
+<LI>To add another activity to your Android project, in Eclipse choose 
+<B>File | New | Other</B>, then select <B>Android Activity</B>, click Next and 
+follow the steps. The resulting Pascal file will contain the same boilerplate
+code as your project's main activity - just edit its code and layout as needed.<P>
+
+<LI>As documented <A HREF="http://wiki.freepascal.org/FPC_JVM/Building#Creating_interfaces_for_other_Java_classes">here</A>,
+you can use the <B>javapp.jar</B> console app (included in FPC's JVM utilities
+.zip) to create a Pascal interface unit for a Java .jar file. For example,
+to work with the PhoneGap <B>Plugin</B> class from the <B>org.apache.cordova.api</B>
+package, run javapp.jar against the cordova.jar file, as in the following
+example script:<P>
+<PRE>
+and_path=~/Tools/android-sdk-macosx/platforms/android-16/android.jar
+cord_path=~/Tools/phonegap-current/lib/android/cordova-2.1.0.jar
+java -jar /usr/local/bin/javapp.jar -bootclasspath $and_path -classpath $cord_path -protected -o cordova_api org.apache.cordova.api.
+</PRE>
+This creates files cordova_api.pas and cordova_api.inc containing Pascal
+declarations for the PhoneGap plugin classes.<P>
+
+<LI>To use a .jar file in an Android project, in Eclipse choose 
+<B>Project | Properties</B>, select <B>Java Build Path</B>, then click
+the <B>Libraries</B> tab. If you added the .jar file to your project's libs
+folder, click <B>Add JARs</B> and select it; if the .jar file is external
+to your project, click <B>Add External JARs</B> and navigate to it.<P>
+
+<LI>To compile your own Pascal units outside of Eclipse, you can create a
+simple script that looks like something like this:<P>
+<PRE>
+comp_path=~/Tools/fpcjvm/lib/fpc/2.7.1
+rtl_path1=$comp_path/units/jvm-android/rtl
+rtl_path2=$comp_path/units/jvm-android/rtl/org/freepascal/rtl
+$comp_path/ppcjvm -Tandroid -XP -Fu$rtl_path1 -Fu$rtl_path2 -O2 -g someunit.pas
+</PRE>
+The second RTL path is not strictly needed to compile, but you'll get a 
+warning if you don't include it.<P>
+
+<LI>Use the Java <B>jar</B> utility to create a .jar file containing your
+own .class files. For example, if your units have the "myunits" namespace,
+you would enter something like this:<P>
+<PRE>jar -cvf myunits.jar myunits</PRE>
+
+All of the .class files under the myunits directory would get added to 
+myunits.jar.<P>
+
+<LI>Both .jar and .apk files are just zip-format archive files, so you can
+view their contents just like you would any .zip file.<P>
+
+</OL>
+
+
+<HR>
+Copyright 2012 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted Nov. 4, 2012.
+<P>
+
+</BODY>
+
+</HTML>
