@@ -1,0 +1,74 @@
+Release 19-May-2017 of p4g.zip
+
+- PasCast example app: On OS X, libndfd.dylib library is now copied to 
+  Frameworks in PasCast.app rather than Resources so it gets codesigned too.
+
+
+Release 17-May-2017 of p4g.zip
+
+- On OS X, explicitly link ndfd example library's Python extension module 
+  against the system's Python library in case more than one copy of Python 2.7 
+  is installed (comp-fpc-pymod.sh).
+- SwiftCast example app: changed signing to use Developer ID Application
+  certificate instead of Mac Developer certificate per Apple's docs.
+
+
+Release 16-May-2017 of p4g.zip
+
+- ndfd example dynamic library (version 1.0.3):
+  - Added cthreads unit for multi-threading.
+  - Eliminated Swift 2 version of wrapper class.
+
+- SwiftCast example app (version 1.0.3):
+  - Updated to Swift 3 syntax.
+  - Now using Grand Central Dispatch background queue when retrieving forecast.
+  - Added NSAllowArbitraryLoads to Info.plist to work around El Capitan (and 
+    later) security restriction on loading insecure http sites like
+    virtualearth.net and other http sites it uses.
+  - libndfd.dylib now copied to Frameworks rather than Resources so it gets
+    codesigned.
+
+
+Release 18-Mar-2017 of p4g.zip
+
+- A few changes in links now that downloadable .zip and .dmg files have been
+  moved from Dropbox to Github.
+
+
+Release 22-Feb-2017 of p4g.zip
+
+- Added support for new NDFD WSDL that uses https protocol. Note that 
+  currently the newly parsed code by ws_helper appears to work fine with Indy,
+  Synapse (trunk) and NS (OS X Foundation) HTTP clients, but not with FPC's
+  HTTP client. Still under investigation...
+
+
+Release 26-Nov-2016 of p4g.zip
+
+- Added support for Linux to scripts (.sh) for building NDFD library, etc.
+- Added support for Swift 3 on OS X (Xcode 8) and Linux (swift.org).
+
+
+Release 16-Oct-2016 of p4g.zip
+
+- Minor changes to PasCast's ReadMe.txt file.
+
+
+Release 24-Sep-2016 of p4g.zip
+
+- Minor changes to getforecast server app.
+
+
+Release 04-Sep-2016 of p4g.zip
+
+- gdal/gdal_pkg.lpk: Added gdal_readme.txt.
+- QxCast: switched to mapnik to avoid needing API key for Thunderforest maps.
+
+
+Release 27-Aug-2016 of p4g.zip
+
+- p4g_ctrls/p4g_map.pas: rewritten PaintImageLayer method to fix bugs.
+- p4g_ctrls/p4g_ctrls.lpk: bumped package version to 0.2.
+- gdal/gdal_pkg.lpk: changed package name from gdal_pkg --> GDAL_Pkg.
+- ndfd/ndfd_pkg.lpk: changed package name from ndfd_pkg --> NDFD_Pkg.
+- AspCast/AspCast: renamed page controls.
