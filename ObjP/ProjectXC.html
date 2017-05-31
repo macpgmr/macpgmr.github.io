@@ -26,17 +26,26 @@
 <HR>
 <H2>Contents</H2>
 <A HREF="#Introduction">Introduction</A><BR>
-<A HREF="#SettingUp">Setting Up</A><BR>
-<A HREF="#FirstProject">Creating a New Project</A><BR>
-<A HREF="#AddingUI">Adding UI (Outlets and Actions)</A><BR>
+<A HREF="#SettingUp">Setting Up</A><BR><BR>
+<A HREF="#FirstProject">Creating an Xcode Objective Pascal Project</A><BR>
+<A HREF="#AddingUI">Adding the UI (Outlets and Actions) to an Objective Pascal App</A><BR><BR>
+<A HREF="#LazProject">Creating an Xcode Project for a Lazarus Project</A><BR>
+<A HREF="#LazProjectFAQs">FAQs: Using Xcode with your Lazarus Project</A><BR>
 <P>
 
 
 <HR>
 <A name="Introduction"></A><H2>Introduction</H2>
 
-These are preliminary notes on some new tools for creating Objective Pascal
-projects for Xcode.<P>
+These notes describe some new ways to create Pascal projects for Xcode.<P>
+
+ProjectXC currently includes two templates for creating Xcode projects:<P>
+
+<UL>
+  <LI>osx-simple - an Objective Pascal project for OS X that uses
+      native Cocoa user interface controls<P>
+  <LI>osx-laz - a Pascal project for debugging a Lazarus app in Xcode
+</UL>
 
 <HR>
 <A name="SettingUp"></A><H2>Setting Up</H2>
@@ -56,26 +65,32 @@ Install version 3.0.0 or later.<P>
 
 fpc makeproj
 
+<LI><B>View makeproj syntax</B><P>
+
+Run it with without any parameters:<P>
+
+./makeproj
 </OL>
 <HR>
 
-<A name="FirstProject"></A><H2>Creating a New Project</H2>
+<A name="FirstProject"></A><H2>Creating an Xcode Objective Pascal Project</H2>
 
-Run makeproj, specifying a template to use and the name of
-the project to create. For example, to create an OS X project:<P>
+Run makeproj, specifying the template to use and the name of
+the project to create. For example, to create an Objective Pascal project
+for OS X:<P>
 
-./makeproj osx-simple ~/MyProjects/test1<P>
+./makeproj osx-simple ~/MyXcodeProjects/test1<P>
 
-Change ~/MyProjects to point to an existing folder where you want the 
+Change ~/MyXcodeProjects to point to an existing folder where you want the 
 test1 project folder to be created.<P>
 
 Now open test1.xcodeproj in Xcode and choose Product | Run to compile and
 run it.<P>
 <HR>
 
-<A name="AddingUI"></A><H2>Adding the UI (Outlets and Actions)</H2>
+<A name="AddingUI"></A><H2>Adding the UI (Outlets and Actions) to an Objective Pascal App</H2>
 
-An OS X project created based on the <B>osx-simple</B> template is:<P>
+An Xcode project created based on the <B>osx-simple</B> template is:<P>
 
 <OL>
  <LI>Simple, not document-based
@@ -118,11 +133,163 @@ As an example, here's how to add a button to a new project based on the
 </UL><BR>
 
 <IMG src="Xcode-test1.jpg" hspace="10" border="1" alt="[Image] goes here"><P>
+<HR>
+
+<A name="LazProject"></A><H2>Creating an Xcode Project for a Lazarus Project</H2>
+
+<H3>Before You Start</H3>
+
+There are several things you'll want to do before you create the Xcode project:<P>
+
+<OL>
+  <LI>Make sure you've set your Lazarus project's target file name. Enter this
+      on the Project | Project Options | Paths tab in Lazarus.<P>
+      <B><I>Tip:</I></B> Lazarus also uses this to name your app's .app bundle.
+      In general, the target name should be in mixed-case, NOT lower-case.<P>
+  <LI>If you want Xcode to be able to jump to syntax errors in your Pascal
+      code, enter the <B>-vbr</B> switch on the Project | Project Options | 
+      Custom Options tab in Lazarus. This switch causes the Free Pascal compiler 
+      to output all error messages in a standard format (Rhide/GCC) that Xcode 
+      understands.<P>
+      <B><I>Note:</I></B> Unfortunately, Lazarus itself does not understand
+      messages in this standard format, so you'll probably want to remove 
+      this switch when you're compiling your project in Lazarus.<P>
+  <LI>Compile your Lazarus project successfully at least once so that Lazarus
+      creates your app's .app bundle and its Info.plist file.<P>
+  <LI>If you want Xcode to be able to display your Pascal source using
+      syntax highlighting, follow the instructions <A HREF="Xcode_Highlighting.html">here</A>.
+</OL>
+
+<H3>Create the Xcode Project</H3>
+
+Run makeproj, specifying the template to use, the Xcode project to create, 
+and the Lazarus project info file to base it on. For example:<P>
+
+./makeproj osx-laz ~/MyXcodeProjects/test2 ~/MyLazProjects/test2/test2.lpi<P>
+
+Now open test2.xcodeproj in Xcode and review what's been added:<P>
+
+<UL>
+  <LI>A ReadMe.txt file. Review this the first time you create an Xcode 
+      project.<P>
+  <LI>A dummy "C" file (main.c). You can ignore this file. It's just used so 
+      that Xcode creates a complete .app bundle so we don't have to.<P>
+  <LI>A reference to your Lazarus .app bundle's Info.plist file. This file
+      serves as the "master" Info.plist file for both projects. You can edit
+      it here by clicking on it or in Xcode's Info tab.<P>
+  <LI>References to your Lazarus project's Pascal source files. The files
+      themselves were not added to the Xcode project, just references to
+      your Lazarus project's files (so you don't have duplicate files).
+      You can view and edit these files in Xcode; changes you make in Xcode
+      will be reflected in Lazarus.
+</UL>
+<HR>
+
+<A name="LazProjectFAQs"></A><H2>FAQs: Using Xcode with your Lazarus Project</H2>
+
+<OL>
+  <LI><B>How does this work?</B><P>
+  Like most IDEs, Xcode runs a series of command line tools when it builds a
+  project. The osx-laz template includes a build script that runs the Lazarus
+  lazbuild console app to do the actual compiling of your Lazarus project.
+  If the Free Pascal compiler that lazbuild runs detects a syntax error in 
+  your code, Xcode will jump to the line where the error occurred, assuming 
+  you added the -vbr switch to your Lazarus project as described above.<P>
+  The rest of the build process is standard Xcode, for example creating the 
+  .app bundle (under ~/Library/Developer/Xcode/DerivedData) and signing the
+  app (with codesign).
+
+  <LI><B>What version of Xcode do I need?</B><P>
+  ProjectXC was tested with Xcode 8.2.1, Lazarus 1.8.0 RC1 and Free Pascal 3.0.2
+  on El Capitan (OS X 10.11).
+
+  <LI><B>Does Xcode modify my Lazarus project?</B><P>
+  Except for edits that you might make to your Pascal source files or Info.plist
+  file, Xcode won't make changes to your Lazarus project files.
+
+  <LI><B>Can I debug my Lazarus app in Xcode?</B><P>
+  Yes, you can set breakpoints the same way you would in any Xcode project.
+
+  <LI><B>How do I use my Lazarus project's build modes in Xcode?</B><P>
+  Lazarus build modes correspond roughly to Xcode schemes. For example, 
+  if you have a Debug build mode and a Release build mode in your Lazarus
+  project, you can try this:<P>
+  <UL>
+    <LI>In Xcode, go to Product | Schemes | Manage Schemes and rename the
+    default scheme to Debug, then add a new scheme and name it Release, setting
+    its Build Configuration to Release.
+    <LI>Scroll to the bottom of Xcode's Release Settings tab and enter this
+    under LAZBUILD_OPTIONS for Debug:<BR>
+    --build-mode=Debug<BR>
+    And this under LAZBUILD_OPTIONS for Release:<BR>
+    --build-mode=Release
+  </UL><P>
+  Now when you select the Debug scheme and build your Xcode project, it
+  will run lazbuild with the Debug build mode. When you select the Release
+  scheme and build your Xcode project, it will run lazbuild with the Release
+  build mode.
+
+  <LI><B>Can I switch LCL widgetsets in Xcode?</B><P>
+  Yes, specify the widgetset to use in the LAZBUILD_OPTIONS setting. For
+  example, to build your Lazarus project with the Cocoa widgetset, enter this:<P>
+  --widgetset=cocoa
+
+  <LI><B>Can Xcode sign my Lazarus app?</B><P>
+  Yes, enable signing on the General tab the same as any Xcode project.
+
+  <LI><B>Can I compile my Xcode project from the command line?</B><P>
+  Yes, use xcodebuild the same as with any Xcode project.
+
+  <LI><B>Can I have my projects open in Lazarus and Xcode simultaneously?</B><P>
+  Yes, in general you should be able to do that.<P>
+  Note that when you save edits in Lazarus, Xcode will immediately update
+  the code in its editor. Lazarus isn't quite that smart, but it will prompt you
+  to reload the modified file when you save edits in Xcode.
+
+  <LI><B>Will this improve my app's user interface, make it more Mac-like?</B><P>
+  No, if you want that, create a project with the Objective Pascal template
+  above. You won't use Lazarus at all in that case. You can use non-UI units
+  from a Lazarus project, but none of its form design files or form code units.
+
+  <LI><B>How do I fix my app's lower-case app menu name?</B><P>
+  This is caused by Lazarus not setting the Info.plist's CFBundleName 
+  correctly.<P>
+  Example 1: You have a Lazarus project myapp.lpi whose target file name is
+  "My App" and you create the Xcode project like this:<P>
+  ./makeproj osx-laz "~/MyXcodeProjects/My App" ~/MyLazProjects/myapp/myapp.lpi<P>
+  Both Lazarus and Xcode will use the correct mixed-case name for the .app 
+  bundle and executable file, but the app menu will be lower-case. To fix, edit 
+  the Bundle name in Xcode's Info panel.<P>
+  
+  Example 2: You used the same name for the Xcode project as the Lazarus project:<P>
+  ./makeproj osx-laz ~/MyXcodeProjects/myapp ~/MyLazProjects/myapp/myapp.lpi<P>
+  By default Xcode will use the project name for the .app bundle and executable 
+  file, so in addition to the fix in example 1, change the Xcode project's
+  target from "myapp" to "My App".  
+
+  <LI><B>What if I need to delete the Xcode project?</B><P>
+  Your Lazarus project won't be affected.<P>
+  Note that if you added files to the Xcode project (not just references)
+  or enabled things that only Xcode can do (for example, copy files to
+  the .app bundle's Resources folder when building the app), you will lose
+  these changes.
+
+  <LI><B>Can I move the Xcode project folder?</B><P>
+  Yes, the Xcode project uses absolute paths to the Lazarus project's files.<P>
+
+  <LI><B>Can I move the Lazarus project folder?</B><P>
+  Yes, but with consequences. The Xcode project uses absolute paths to the 
+  Lazarus project's files. You will lose the ability to view and edit the
+  Info.plist and Pascal source files in Xcode, although you can still build
+  once you've updated the LAZ_PROJECT_DIR setting in Xcode's Build settings.<P>
+  If possible, delete the Xcode project (see question above), move the 
+  Lazarus project, then create the Xcode project again.
+</OL>
 
 <HR>
-Copyright 2015-2016 by Phil Hess.<P>
+Copyright 2015-2017 by Phil Hess.<P>
 macpgmr (at) icloud (dot) com<P>
-First posted Oct. 25, 2015; last edited Nov. 20, 2016.
+First posted Oct. 25, 2015; last edited May 31, 2017.
 <P>
 
 </BODY>
