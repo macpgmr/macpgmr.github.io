@@ -35,6 +35,7 @@
 <A HREF="#QGIS">PyCast: Using a Pascal module with a Python plugin for QGIS</A><BR>
 <A HREF="#P4G_Ctrls">PasCast: Using a Pascal library with Lazarus GIS controls</A><BR>
 <A HREF="#qooxdoo">QxCast: Using a Pascal library and OpenStreetMap in a qooxdoo Mobile Web app</A><BR>
+<A HREF="#Mapbox">BoxCast: Using a Pascal library and Mapbox GL in a Web app</A><BR>
 <A HREF="#Todo">Future topics and to-do list</A><BR>
 <P>
 
@@ -684,7 +685,7 @@ Lazarus documentation is here: <A HREF="http://www.lazarus-ide.org/">http://www.
 
 QxCast is a mobile Web app that shows how to:<P>
 <UL>
-  <LI>Use a Pascal library in a Pascal FCGI server app. Specifically it uses the 
+  <LI>Use a Pascal library with a Pascal CGI server app. Specifically it uses the 
       ndfd library and its Pascal wrapper class from Part 2 of Pascal Dynamic 
       Libraries to retrieve weather forecast data.
   <LI>Use the <A HREF="http://qooxdoo.org/">qooxdoo</A> JavaScript framework 
@@ -697,19 +698,80 @@ QxCast is a mobile Web app that shows how to:<P>
 
 A screenshot of QxCast is here: <A HREF="QxCast.jpg">QxCast.jpg</A><P>
 
-To try out QxCast, follow the steps for compiling the server app and running the
-client app for the Unicodum demo app <A HREF="../qxotica/QxoticaStatus.html#GettingStartedUnicodum">here</A>.
-Be sure to copy the ndfd library (previously compiled elsewhere) to the
-server app's folder.<P>
+To try out QxCast locally, first set up the getforecast server app.
+The getforecast server app has no dependencies outside of Free Pascal and the 
+ndfd library's Pascal wrapper class, so just compile it and copy getforecast.cgi 
+and the ndfd library (previously compiled elsewhere) to the server app's folder
+With IIS, you also copy getforecast's web.config file.<P>
+
+On Mac, the server app files go under /Library/WebServer/CGI-Executables.
+On Windows, they go under C:\inetpub\wwwroot.<P>
+
+Now follow the steps for running the client app for the Unicodum demo app 
+<A HREF="../qxotica/QxoticaStatus.html#GettingStartedUnicodum">here</A>.<P>
 
 A screenshot of the QxCast client project in Lazarus is here: 
 <A HREF="QxCast-Lazarus.jpg">QxCast-Lazarus.jpg</A><P>
 
 Notes on QxCast:<P>
 <OL>
-  <LI>See <A HREF="PascalDynLibs_4.html">Part 4</A> for tips on deploying an
-      FCGI app on an actual server (not just locally).<P>
+  <LI>See <A HREF="PascalDynLibs_4.html">Part 4</A> for tips on deploying a
+      CGI app on an actual server (not just locally).<P>
 </OL>
+
+
+<HR>
+<A name="Mapbox"></A><H2>BoxCast: Using a Pascal library and Mapbox GL in a Web app</H2>
+
+BoxCast is a Web app that shows how to:<P>
+<UL>
+  <LI>Use a Pascal library with a Pascal CGI server app. Specifically it uses the 
+      ndfd library and its Pascal wrapper class from Part 2 of Pascal Dynamic 
+      Libraries to retrieve weather forecast data.
+  <LI>Use the <A HREF="https://www.mapbox.com/mapbox-gl-js/api">Mapbox GL</A>
+      Javascript library for the client app.
+  <LI>Use the <A HREF="https://github.com/mapbox/corslite">corslite</A> 
+      Javascript library to make AJAX calls to the server app.
+</UL>
+
+A screenshot of BoxCast is here: <A HREF="BoxCast.jpg">BoxCast.jpg</A><P>
+
+To try out BoxCast locally, first set up QxCast's getforecast server app
+(see notes above). Then open BoxCast's index.html file in a browser.<P>
+
+A screenshot of the boxcast.js client file is here: 
+<A HREF="BoxCast-TextWrangler.jpg">BoxCast-TextWrangler.jpg</A><P>
+
+Notes on BoxCast:<P>
+<OL>
+  <LI>See <A HREF="PascalDynLibs_4.html">Part 4</A> for tips on deploying a
+      CGI app on an actual server (not just locally).<P>
+  <LI>The qooxdoo framework used by QxCast above uses JSONP to work around
+      browser restrictions on cross-domain calls. Mapbox uses a newer 
+      approach called <A HREF="https://enable-cors.org">CORS</A>. With Apache,
+      this requires a small change to its httpd.conf file (in /etc/apache2). 
+      With IIS, the web.config file deployed with getforecast.cgi 
+      takes care of enabling CORS for the server app.<P>
+  <LI>To deploy the BoxCast client files, copy and place index.html,
+      boxcast.js and boxcast-config.js together. By default, boxcast-config.js
+      assumes the server app will be running locally 
+      (http://localhost/cgi-bin/getforecast.cgi).
+      Edit the URL in this config file to call the server app on a remote server.
+</OL>
+
+Mapbox GL is a powerful Javascript mapping library, but it can also be used
+with Mapbox Studio, a Web-based tool for creating your own custom maps (called
+<A HREF="https://www.mapbox.com/mapbox-gl-js/style-spec">styles</A>). 
+In addition, you can create and use your own 
+<A HREF="https://www.mapbox.com/vector-tiles">vector tilesets</A> 
+in Mapbox Studio by uploading zipped shapefiles and then associating the 
+resulting tilesets with layers in your custom map. You can also host your own 
+styles and tilesets on Mapbox and reference them in your Web apps.<P>
+
+You can try out Mapbox Studio for free by creating a Mapbox account.<P>
+ 
+Note that BoxCast uses a standard Mapbox style and does not use any tilesets 
+outside of what the standard map style uses (roads, satellite imagery, etc.).
 
 
 <HR>
@@ -723,7 +785,7 @@ Notes on QxCast:<P>
 <HR>
 Copyright 2015 by Phil Hess.<P>
 macpgmr (at) icloud (dot) com<P>
-First posted March 19, 2015; last edited May 19, 2017.
+First posted March 19, 2015; last edited June 10, 2017.
 <P>
 
 </BODY>

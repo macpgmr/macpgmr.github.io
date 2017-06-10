@@ -196,14 +196,13 @@ You can write your Pascal server app using whatever CGI or other units you want,
 as long as it does what is outlined above.<P>
 
 For example, the <A HREF="PascalDynLibs.html">Pascal for GIS</A>
-<B>getforecast</B> app uses the abandoned ExtPascal project's FCGIApp unit.
+<B>getforecast</B> app uses Free Pascal's simple ezcgi unit.
 The source for getforecast is <A HREF="p4g.zip">here</A> if you want to look
-at it. The source for the FCGIApp and related units is <A HREF="fcgiapp_pkg.zip">here</A>.<P>
+at it.<P>
 
-You can compile these source files as follows:<P>
+You can compile getforecast as follows:<P>
 
-<pre><code class="bash">lazbuild fcgiapp_pkg.lpk
-lazbuild cgigateway.lpi
+<pre><code class="bash">lazbuild ndfd_pkg.lpk
 lazbuild getforecast.lpi
 </code></pre>
 
@@ -336,7 +335,7 @@ Map tile servers typically support URL templates, where {z} is zoom level,
 <HR>
 Copyright 2016 by Phil Hess.<P>
 macpgmr (at) icloud (dot) com<P>
-First posted Sept. 24, 2016; last edited May 13, 2017.<P>
+First posted Sept. 24, 2016; last edited June 10, 2017.<P>
 Code syntax highlighting done with <A HREF="https://highlightjs.org">highlight.js</A>.
 <P>
 
