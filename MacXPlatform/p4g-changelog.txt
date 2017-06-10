@@ -1,4 +1,16 @@
-Releast 29-May-2017 of p4g.zip
+Release 10-Jun-2017 of p4g.zip
+
+- ndfd example dynamic library (version 1.0.4):
+  - Added support for the NDFD REST service (now used by default), although
+    like the SOAP service this does not work with FPC's HTTP client,
+    so use Synapse, Indy or NS Foundation (Mac) client.
+- Added BoxCast, a new example Web app that uses the Mapbox GL Javascript 
+  library.
+- Replaced the getforecast example server app with a simpler CGI version. This
+  server app is used with the QxCast and BoxCast example Web apps.
+
+
+Release 29-May-2017 of p4g.zip
 
 - AspCast example app: minor changes to update for DotSpatial 2.0.
 - testndfd.py example: fixed for use with latest IronPython.
