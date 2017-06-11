@@ -27,19 +27,56 @@
 <HR>
 <H2>Under construction!</H2>
 
-The example library code for Part 2 is largely finished, but the notes on passing
+The example library code for Part 2 is finished, but the notes on passing
 pointers and strings are still under construction. The notes for
 <A HREF="PascalDynLibs_3.html">Part 3: GIS for Pascal</A>
 <I>are</I> available, though, and use part 2's example library.<P>
 
 So, if you want to use Part 2's <B>ndfd</B> library with 
 Part 3's GIS examples,
-just run the various script (.sh) or batch (.bat) files in the
+just run the supplied script (.sh) or batch (.bat) files in the
 ndfd subfolder of Part 3's <A HREF="p4g.zip">p4g.zip</A> to build the binaries 
 that you'll need for the examples.<P>
 
-Note that you'll need to edit a couple of the scripts to point to the
-location of the Web Service Toolkit source files.<P>
+<H3>Compiling the ndfd library</H3>
+
+The <B>ndfd</B> library calls the 
+<A HREF="http://www.usgovxml.com/DataService.aspx?ds=NDFD">National Digital Forecast Database</A> (NDFD)
+REST service to retrieve weather forecast data, so you'll need an
+HTTP client to compile the library. Unfortunately, Free Pascal's HTTP client
+does not work with NDFD's new HTTPS protocol, so you'll need to use another 
+client, such as Indy, Synapse or, on Mac, the Foundation-based NS client 
+(<A HREF="https://macpgmr.github.io/ObjP/nsunits-src.zip">nsunits-src.zip</A>).<P>
+
+Run the appropriate script and specify the HTTP client to use and the location
+of its files. Use one of the following defines on the script command line:<P>
+<UL>
+  <LI>Indy: -dUseIndyHttpClient
+  <LI>Synapse: -dUseSynapseHttpClient
+  <LI>Foundation (Mac): -dUseNSHttpClient
+</UL>
+
+For example, to compile the library on a Mac, using the Foundation-based HTTP
+client, enter something like this (adjust the path as needed):<P>
+
+<PRE>./comp-fpc-lib.sh -dUseNSHttpClient -Fu~/Tools/nsunits-src</PRE><P>
+
+Another example, to compile the library on Windows, using Indy, enter something
+like this (adjust the path as needed):<P>
+
+<PRE>comp-fpc-lib.bat -dUseIndyHttpClient -FuC:\Tools\indy</PRE><P>
+
+Note that Indy and Synapse require the OpenSSL libraries to communicate with 
+sites that use the HTTPS protocol. On Mac and Linux, these libraries are already 
+installed, but on Windows you'll need to obtain them yourself and place them 
+somewhere on the path on in the same directory as the NDFD library. You can 
+download them from <A HREF="http://indy.fulgan.com/SSL">here</A>.<P>
+
+<H3>Using the NDFD SOAP service (optional)</H3>
+
+You can also use NDFD's SOAP service if you're interested in that. To compile
+the library, you'll need to specify the -dUseNdfdSoap switch and you'll need 
+the Web Service Toolkit (WST).<P>
 
 You do have WST, right? If not, change to a folder where you want to put 
 the WST source files and check them out like this:<P>
@@ -48,17 +85,38 @@ the WST source files and check them out like this:<P>
 
 Documentation is here:  <A HREF="http://wiki.freepascal.org/Web_Service_Toolkit">http://wiki.freepascal.org/Web_Service_Toolkit</A><P>
 
-By default, the ndfd library will be compiled with FPC's HTTP client, but
-WST also supports Synapse, Indy and NS (OS X Foundation-based client). 
-Just specify the appropriate switch and add a path to the source for the 
-HTTP client you want to use in the appropriate scripts.
+For example, to compile the library on Mac or Linux, using Synapse and the
+NDFD SOAP service, enter something like this:<P>
 
+<PRE>./comp-fpc-lib.sh -dUseSynapseHttpClient -Fu~/Tools/synapse-trunk -dUseNdfdSoap -Fu~/Tools/WST</PRE>
 
+<H3>Using the ndfd library</H3>
+
+There are some other scripts or batch files you can run when you're ready
+to use the ndfd library.<P>
+
+For example, to use the ndfd library with Python, compile the Python extension 
+module using one or more of these:<P>
+
+<PRE>comp-fpc-pymod.sh
+comp-fpc-pymod3.sh
+comp-fpc-pymod.bat</PRE>
+
+NdfdLib.pas is the Pascal wrapper class for the library. To use it with
+Lazarus, compile this Lazarus package:<P>
+
+<PRE>lazbuild ndfd_pkg.lpk</PRE>
+
+To compile the .NET/Mono assembly that wraps the ndfd library, run one of
+these:<P>
+
+<PRE>comp-cs-interop.sh
+comp-cs-interop.bat</PRE>
 
 <HR>
 Copyright 2015 by Phil Hess.<P>
 macpgmr (at) icloud (dot) com<P>
-First posted March 15, 2015; last edited Oct. 16, 2016.
+First posted March 15, 2015; last edited June 11, 2017.
 <P>
 
 </BODY>
