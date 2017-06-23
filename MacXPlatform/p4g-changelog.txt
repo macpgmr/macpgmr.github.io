@@ -1,3 +1,12 @@
+Release 23-Jun-2017 of p4g.zip
+
+- ndfd example dynamic library:
+  - On macOS, added script for creating NDFD.framework for library
+    (create-framework.sh).
+  - On macOS, added support for NDFD_FRAMEWORK define to NdfdLib.pas for linking
+    against NDFD.framework instead of libndfd.dylib.
+
+
 Release 11-Jun-2017 of p4g.zip
 
 - Improved script and batch files for compiling ndfd library.

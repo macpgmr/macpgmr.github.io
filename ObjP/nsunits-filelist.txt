@@ -20,8 +20,13 @@ ns_url_request.pas    Foundation framework-based class for use by itself as an
 
 NSMisc.pas            Miscellaneous Foundation framework-based routines.
 
-compile-nsunits.sh    Script file that compiles above units for 32- and 64-bit
-                       OS X, iOS Simulator and iOS (arm).
+compile-nsunits-macos.sh
+                      Script file that compiles above units for 32- and 
+                       64-bit macOS.
+
+compile-nsunits-ios.sh
+                      Script file that compiles above units for 32- and 
+                       64-bit iOS Simulator and iOS (arm).
 
 CocoaHelpers.pas      Handy Cocoa framework-based routines for use in a Cocoa
                        app.
