@@ -251,7 +251,14 @@ Now open test2.xcodeproj in Xcode and review what's been added:<P>
   <LI><B>Can I switch LCL widgetsets in Xcode?</B><P>
   Yes, specify the widgetset to use in the LAZBUILD_OPTIONS setting. For
   example, to build your Lazarus project with the Cocoa widgetset, enter this:<P>
-  --widgetset=cocoa
+  --widgetset=cocoa<P>
+  To build a 64-bit Cocoa app, add these switches as well to LAZBUILD_OPTIONS:<P>
+  --compiler=/usr/local/bin/ppcx64 --cpu=x86_64<P>
+  You can also use a different lazbuild than the one installed with Lazarus.
+  Just change the LAZBUILD_PATH setting. If you have more than one
+  installation of Lazarus, you can also specify a different configuration 
+  path to use in the LAZBUILD_OPTIONS, for example:<P>
+  --pcp=~/.lazarus-svn
 
   <LI><B>Can Xcode sign my Lazarus app?</B><P>
   Yes, enable signing on the General tab the same as any Xcode project.
@@ -308,7 +315,7 @@ Now open test2.xcodeproj in Xcode and review what's been added:<P>
 <HR>
 Copyright 2015-2017 by Phil Hess.<P>
 macpgmr (at) icloud (dot) com<P>
-First posted Oct. 25, 2015; last edited June 24, 2017.
+First posted Oct. 25, 2015; last edited June 29, 2017.
 <P>
 
 </BODY>
