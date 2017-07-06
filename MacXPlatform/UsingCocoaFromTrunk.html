@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!--Copyright 2017 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Using Cocoa from Trunk</TITLE>
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<BODY>
+
+<CENTER>
+<H1>Using Cocoa from Trunk</H1>
+</CENTER>
+
+Here's a fairly painless list of steps for using the 64-bit Cocoa widgetset 
+from the Lazarus "trunk" (latest source code). This won't affect your existing
+Lazarus installation.<P>
+
+Most of these steps are done at the command line in a Terminal window, so start
+by running the Terminal app in /Applications/Utilities. Note that you can
+copy and paste any of the commands given below into the Terminal window
+to avoid typing them yourself.
+
+<OL>
+<LI><B>Check out code from trunk</B><P>
+
+Create a folder somewhere and check out the code. For example:<P>
+
+<PRE>mkdir laz-svn
+cd laz-svn
+svn checkout https://svn.freepascal.org/svn/lazarus/trunk .
+</PRE>
+
+This may take a while, but it's just source code. Nothing is being installed.<P>
+
+
+<LI><B>Build Lazarus IDE with 64-bit Cocoa widgetset</B><P>
+
+<PRE>make LCL_PLATFORM=cocoa CPU_TARGET=x86_64</PRE>
+
+
+<LI><B>Run Lazarus Cocoa IDE to create alternate config folder</B><P>
+
+<PRE>open lazarus.app --args "--pcp=~/.laz-svn"</PRE>
+
+You can substitute a different name for the config folder path ("pcp").
+<B><I>Don't</I></B> use ~/.lazarus since that's the default for your existing Lazarus
+installation. The leading period (.) means the folder will be hidden -- omit
+the period if you don't want your config folder to be hidden, for example so 
+you can easily delete it later.<P>
+
+<B><I>Note:</I></B> Since the Cocoa widgetset is incomplete, the Lazarus IDE 
+built with Cocoa isn't complete either. It should start okay and you can play 
+around with it to see what's working and what's not, but you might just want to
+exit at this point. You only need to run it once to create the config folder.<P>
+
+
+<LI><B>Compile the TWebBrowser control for 64-bit Cocoa</B><P>
+
+First download and unzip the source:<P>
+
+<A HREF="https://macpgmr.github.io/MacXPlatform/lclwebbrowser-src.zip">https://macpgmr.github.io/MacXPlatform/lclwebbrowser-src.zip</A><P>
+
+Now change to where you unzipped the source and compile it with the Lazarus 
+lazbuild command. The lazbuild command was built when the Cocoa IDE was built,
+so substitute the path to your own checkout folder. Also make sure that the
+--pcp switch points to your config folder created above when you ran the
+Cocoa IDE.<P>
+
+<PRE>~/laz-svn/lazbuild --pcp=~/.laz-svn --ws=cocoa --compiler=/usr/local/bin/ppcx64 --cpu=x86_64 webbrowserpackage.lpk</PRE>
+
+
+<LI><B>Install the TWebBrowser control in your existing Lazarus</B><P>
+
+Even though only Cocoa support is implemented currently in TWebBrowser, you
+can still install and use the control for designing a form in Lazarus on any 
+platform, including the 32-bit Carbon IDE.<P>
+
+  <UL>
+  <LI>Start your existing Lazarus (<B><I>not</I></B> the Cocoa IDE)
+  <LI>Package | Open Package File
+  <LI>Navigate to and select webbrowserpackage.lpk
+  <LI>Click the package window's Compile button
+  <LI>Click the package window's Use | Install and rebuild Lazarus
+  </UL><P>
+
+This will add TWebBrowser to the Common Controls palette.<P>
+
+
+<LI><B>Create a test app in your existing Lazarus</B><P>
+
+Create a new project in Lazarus and add a TWebControl to the form. Then
+call the control's LoadPage method, passing in the URL of a site to load. 
+For example:<P>
+
+<PRE>procedure TForm1.Button1Click(Sender: TObject);
+begin
+  WebBrowser1.LoadPage('https://www.lazarus-ide.org');
+end;
+</PRE>
+
+Compile and run the app. You won't see anything in the control's area of the
+form since only Cocoa is currently supported -- this is normal.<P>
+
+
+<LI><B>Compile the 64-bit Cocoa app</B><P>
+
+Now compile the app for 64-bit Cocoa from the command line. For example:<P>
+
+<PRE>~/laz-svn/lazbuild --pcp=~/.laz-svn --ws=cocoa --compiler=/usr/local/bin/ppcx64 --cpu=x86_64 project1.lpi</PRE>
+
+Again, substitute your own path to lazbuild and your own config folder. And if
+you used a different name for your project info file, substitute for project1.lpi too.<P>
+
+
+<LI><B>Run the 64-bit Cocoa app in the lldb debugger</B><P>
+
+<PRE>lldb project1.app
+run</PRE>
+
+Once you've quit the app, exit the debugger:<P>
+
+<PRE>exit</PRE>
+
+You can also run the app by double-clicking it in Finder.
+
+</OL>
+
+
+
+<HR>
+Copyright 2017 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted July 5, 2017.<P>
+<P>
+
+</BODY>
+
+</HTML>
