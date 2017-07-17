@@ -1,3 +1,9 @@
+Release 17-Jul-2017 of p4g.zip
+
+- Added ndfd_framework_pkg.lpk for accessing NDFD.framework (Mac only).
+- Moved Mapbox access token to boxcast-config.js in BoxCast example app.
+
+
 Release 23-Jun-2017 of p4g.zip
 
 - ndfd example dynamic library:
