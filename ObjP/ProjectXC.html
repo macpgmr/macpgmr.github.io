@@ -65,15 +65,26 @@ Install version 3.0.0 or later.<P>
 
 <A HREF="projectxc-src.zip">projectxc-src.zip</A><P>
 
-<LI><B>Compile makeproj.pas</B><P>
+<LI><B>Compile makeproj command line program</B><P>
 
-fpc makeproj
+<B><I>Tip:</I></B> If you're only interested in Lazarus integration,
+you can skip this step.<P>
 
-<LI><B>View makeproj syntax</B><P>
+In a Terminal window:<P>
 
-Run it with without any parameters:<P>
+fpc makeproj<P>
+
+To view the makeproj syntax, run it without any parameters:<P>
 
 ./makeproj
+
+<LI><B>Install ExportToXcode package in Lazarus (optional)</B><P>
+
+In Lazarus, choose Package | Open Package File and select exporttoxcode.lpk
+in the ProjectXC lazide folder.<P>
+Click Compile, then click Use | Install.<P>
+Once Lazarus has been rebuilt and restarted, you can use the Export to Xcode
+command on the Tools menu.
 </OL>
 <HR>
 
@@ -180,12 +191,24 @@ There are several things you'll want to do before you create the Xcode project:<
 
 <H3>Create the Xcode Project</H3>
 
-Run makeproj, specifying the template to use, the Xcode project to create, 
-and the Lazarus project info file to base it on. For example:<P>
+There are two ways to create an Xcode project for your Lazarus project, 
+depending on whether you're using the makeproj command line program or
+the Export to Xcode command on the Lazarus Tools menu.<P>
+
+<OL>
+<LI>With makeproj, run makeproj in a Terminal window, specifying the template 
+to use, the Xcode project to create, and the Lazarus project info file to base 
+it on. For example:<P>
 
 ./makeproj osx-laz ~/MyXcodeProjects/test2 ~/MyLazProjects/test2/test2.lpi<P>
 
-Now open test2.xcodeproj in Xcode and review what's been added:<P>
+<LI>With Lazarus, choose Tools | Export to Xcode. By default, the
+Xcode Project Name box will be filled in with your Lazarus project's target 
+file name. Edit this if you want, then choose an existing folder where the
+Xcode project folder will be created. Finally, click the Export button.
+</OL>
+
+Now open your new .xcodeproj in Xcode and review what's been added:<P>
 
 <UL>
   <LI>A ReadMe.txt file. Review this the first time you create an Xcode 
@@ -315,7 +338,7 @@ Now open test2.xcodeproj in Xcode and review what's been added:<P>
 <HR>
 Copyright 2015-2017 by Phil Hess.<P>
 macpgmr (at) icloud (dot) com<P>
-First posted Oct. 25, 2015; last edited June 29, 2017.
+First posted Oct. 25, 2015; last edited July 29, 2017.
 <P>
 
 </BODY>
