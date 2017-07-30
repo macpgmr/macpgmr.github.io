@@ -1,0 +1,245 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2017 Phil Hess-->
+<HTML>
+
+<HEAD>
+
+<TITLE>Pascal to JavaScript: A Report</TITLE>
+<STYLE type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</STYLE>
+
+<META NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</HEAD>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<BODY>
+
+<CENTER>
+<H1>Pascal to JavaScript: A Report</H1>
+</CENTER>
+
+<HR>
+
+FPC trunk includes the <B>fppas2js.pp</B> unit for converting Pascal source
+to JavaScript source. The file currently stands at over 12K lines of code and clearly 
+represents a significant effort over the last several years.<P>
+
+I was curious about several things: (1) What does the JavaScript code 
+emitted by the converter look like? (2) How do you use that code with external 
+JavaScript libraries? and (3) Is it practical to write JavaScript in Pascal?<P>
+
+As a test, I took this snippet of JavaScript from the BoxCast example app 
+described <A HREF="https://macpgmr.github.io/MacXPlatform/PascalDynLibs_3.html#Mapbox">here</A>:<P>
+
+<I>Figure 1. JavaScript from boxcast.js.</I>
+<pre><code class="javascript">var map = new mapboxgl.Map({
+    container: "map",
+    style: "mapbox://styles/mapbox/satellite-streets-v10",
+    center: [-107.74, 37.92],
+    zoom: 9.0,
+    logoPosition: "bottom-right" });</code></pre>
+    
+This is typical JavaScript code. It creates a Map object by calling its
+constructor, passing in a JavaScript object that specifies various things such as
+the HTML element to associate with the map object, the location the map should display,
+and so on. All very readable and concise. You can read about the Map class 
+and its options <A HREF="https://www.mapbox.com/mapbox-gl-js/api/#map">here</A>.
+Its source is <A HREF="https://github.com/mapbox/mapbox-gl-js/blob/master/src/ui/map.js">here</A>.<P>
+
+So how would you do this in Pascal? Can the converter create the functional
+equivalent of this code from Pascal?<P>
+
+Since Map is in the <B>mapbox-gl.js</B> file, we need a way of referencing code 
+that's external to what the converter will produce. This is roughly 
+analogous to using an external dynamic library currently, where a Pascal
+interface unit provides declarations for the functions that the library exports.
+With a dynamic library, you usually run a parser 
+on the library's header file (.h) to create the interface unit more or less 
+automatically. Since JavaScript doesn't have header files, I just created a 
+rudimentary interface unit manually. It looks like this:<P>
+
+<I>Figure 2. Pascal interface unit for mapbox-gl.js</I>
+<pre><code class="delphi">unit MapboxGL_Intf;
+
+interface
+
+{$modeswitch externalclass}
+
+type
+  TMapOptions = record
+    container : string;
+    style : string;
+    doubleClickZoom : Boolean;
+//    center : array [0..1] of Double;  //not supported yet
+    zoom : Double;
+    logoPosition : string;
+  end;
+
+  TMap = class external name 'mapboxgl.Map'
+    constructor New(Options : TMapOptions);
+  end;
+
+implementation
+
+end.</code></pre>
+
+Note that instead of declaring functions as external, the way you would with
+a dynamic library, it declares a JavaScript class as external.<P>
+
+Also, the converter does not appear to support the array declaration yet,
+so that's commented out for now.<P>
+
+In order to convert this to JS, I hacked FPC's <B>testpas2js.pp</B> program,
+specifically the <B>tcmodules.pas</B> unit, and added a few additional test suites.
+Here's what the converter generates for Figure 2's Pascal code:<P>
+
+<I>Figure 3. Interface unit converted to JavaScript.</I>
+<pre><code class="javascript">rtl.module("MapboxGL_Intf", ["System"], function () {
+  var $mod = this;
+  this.TMapOptions = function (s) {
+    if (s) {
+      this.container = s.container;
+      this.style = s.style;
+      this.doubleClickZoom = s.doubleClickZoom;
+      this.zoom = s.zoom;
+      this.logoPosition = s.logoPosition;
+    } else {
+      this.container = "";
+      this.style = "";
+      this.doubleClickZoom = false;
+      this.zoom = 0.0;
+      this.logoPosition = "";
+    };
+    this.$equal = function (b) {
+      return (this.container === b.container) && ((this.style === b.style) && ((this.doubleClickZoom === b.doubleClickZoom) && ((this.zoom === b.zoom) && (this.logoPosition === b.logoPosition))));
+    };
+  };
+});</code></pre>
+
+No real surprises here. It uses rtl.module to register the module. Looking
+around I found <B>rtl.js</B> in FPC trunk too (under utils/pas2js/dist).
+Obviously you'll need to use rtl.js with anything the converter generates.<P>
+
+The TMapOptions record converts to a JavaScript object, with a constructor that either
+creates a new blank object or initializes it from an object passed. There's
+also a function for comparing whether the object is equal to another object
+of the same type. Since TMap was declared external, no additional code was
+generated for it.<P>
+
+So how to use the interface unit? Here's what I came up with as the Pascal 
+equivalent of Figure 1's JavaScript:<P>
+
+<I>Figure 4. Pascal that uses interface unit.</I>
+<pre><code class="delphi">program testmb1;
+uses
+  MapboxGL_Intf;
+
+var
+  options : TMapOptions;
+  map : TMap;
+
+begin
+  options.container := 'map';
+  options.style := 'mapbox://styles/mapbox/satellite-streets-v10';
+//  options.center[0] := -107.74;  //longitude
+//  options.center[1] := 37.92;  //latitude
+  options.zoom := 9.0;
+  options.logoPosition := 'bottom-right';
+
+  map := TMap.New(options);
+end.</code></pre>
+
+Converted to JavaScript, it looks like this:<P>
+
+<I>Figure 5. Pascal that uses interface unit converted to JavaScript.</I>
+<pre><code class="javascript">rtl.module("program", ["System", "MapboxGL_Intf"], function () {
+  var $mod = this;
+  this.options = new pas.MapboxGL_Intf.TMapOptions();
+  this.map = null;
+  $mod.$main = function () {
+    $mod.options.container = "map";
+    $mod.options.style = "mapbox:\/\/styles\/mapbox\/satellite-streets-v10";
+    $mod.options.zoom = 9.0;
+    $mod.options.logoPosition = "bottom-right";
+    $mod.map = new mapboxgl.Map(new pas.MapboxGL_Intf.TMapOptions($mod.options));
+  };
+});</code></pre>
+
+Note the use of "pas". This is an object in rtl.js that allows you
+to reference your registered modules.<P>
+
+Finally, does the generated JavaScript still work?<P>
+
+First I added the new JavaScript files to BoxCast's index.html file (including a
+dummy system.js that I created):<P>
+
+<I>Figure 6. Detail of BoxCast's modified index.html file.</I>
+<pre><code class="xml">&lt;script src="rtl.js"&gt;&lt;/script&gt;
+&lt;script src="system.js"&gt;&lt;/script&gt;
+&lt;script src="mapboxgl_intf.js"&gt;&lt;/script&gt;
+&lt;script src="testmb1.js"&gt;&lt;/script&gt;</code></pre>
+
+Here's the new calling code to replace Figure 1's "native" JavaScript:<P>
+
+<I>Figure 7. New boxcast.js calling code.</I>
+<pre><code class="xml">rtl.run("program");
+var map = pas.program.map;  //so remaining BoxCast code can be used as is
+map.setCenter([-107.74, 37.92]);  //workaround since can't set yet in Pascal</code></pre>
+
+With the modified index.html loaded into a browser, BoxCast still works 
+as before.<P>
+
+
+<H2>Questions and comments</H2>
+
+<OL>
+<LI>The JavaScript object that the TMapOptions record converts to is probably
+not exactly what we want. With the JavaScript options object, only name-value
+pairs that you pass get set; unspecified options are assigned default values in
+the Map constructor. For example, Map's doubleClickZoom default is true, but
+since we did not assign it a value, its initial value of false (set in
+our TMapOptions constructor) is passed to the constructor.<P>
+
+<LI>Some of the Map options can be more than one type. For example, container
+can be either an HTMLElement or a string, style can be either an Object or 
+a string, and so on. This is very common in JavaScript. To support more than
+one type in Pascal, the TMapOptions record may need to declare these as 
+Variants or something.<P>
+
+<LI>How do the Pascal interface units get written? With dynamic libraries,
+these units can be generated by parsers. For example, I use Ryan's 
+<A HREF="https://github.com/genericptr">parser</A> to create interface units 
+for dynamic libraries and macOS frameworks that have C or Objective C header 
+files. But no such tool exists for JavaScript. If you had a JavaScript parser, 
+you might be able to create such a tool for generating interface units directly 
+from the JavaScript source (for example, from
+<A HREF="https://github.com/mapbox/mapbox-gl-js/blob/master/src/ui/map.js">map.js</A>).<P>
+
+<LI>What about documentation, example code, articles, tutorials, FAQs, demos, 
+discussions, etc. for the JavaScript libraries that you'll need to use even
+if you write your JavaScript app in Pascal? Everything in that list will assume 
+JavaScript, not Pascal, so you will still need to know some JavaScript in order 
+to use the Pascal interface units.<P>
+
+<LI>Is converting from Pascal easier than writing in JavaScript in the first 
+place? Can you produce better code, or can you produce equivalent code faster? 
+Even assuming that "someone else" creates interface units for the JavaScript 
+libraries you'll use, the complete lack of support and documentation for using 
+these libraries via Pascal is balanced largely by the argument of familiarity 
+with Pascal.
+</OL>
+
+<HR>
+Copyright 2017 by Phil Hess.<P>
+macpgmr (at) icloud (dot) com<P>
+First posted July 30, 2017.
+<P>
+
+</BODY>
+
+</HTML>
