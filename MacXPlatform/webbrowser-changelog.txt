@@ -1,0 +1,39 @@
+Version 0.1.5 (26-Jul-2017)
+
+- Added OnLinkClick event property for handling link clicks.
+
+
+Version 0.1.4 (22-Jul-2017)
+
+- Added EvaluateJavaScript method to TWebBrowser for evaluating a string
+  containing JavaScript.
+
+
+Version 0.1.3 (20-Jul-2017)
+
+- Added more notes to readme.txt and links to technical docs in code.
+- Simplied Qt implementation slightly.
+
+
+Version 0.1.2 (16-Jul-2017)
+
+- Added PasMap example app.
+- Added readme.txt file.
+
+
+Version 0.1.2 (15-Jul-2017)
+
+- Added LoadPageFromHtml method to TWebBrowser for loading a string
+  containing HTML.
+- Added support for Qt widgetset.
+- Included UsingCocoaFromTrunk.html document.
+
+
+Version 0.1.1 (07-Jul-2017)
+
+- Added OnPageLoaded and OnPageLoadError event properties to TWebBrowser.
+
+
+Version 0.1 (05-Jul-2017)
+
+- Initial proof-of-concept release. Only LCL Cocoa widgetset is implemented.
