@@ -1,3 +1,9 @@
+Release 15-Feb-2018 of p4g.zip
+
+- Minor update to BoxCast example app.
+- Minor update to QxCast example app.
+
+
 Release 17-Jul-2017 of p4g.zip
 
 - Added ndfd_framework_pkg.lpk for accessing NDFD.framework (Mac only).
