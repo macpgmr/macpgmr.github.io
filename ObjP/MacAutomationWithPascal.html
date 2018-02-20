@@ -1,0 +1,409 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2018 Phil Hess-->
+<html>
+
+<head>
+
+<title>Mac Automation with Pascal</title>
+<style type="text/css">
+  BODY { font: 14px/19px "Helvetica Neue", Arial, sans-serif; background-color: #fff; color: #333; }
+</style>
+
+<meta NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</head>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<body>
+
+<center>
+<h1>Mac Automation with Pascal</h1>
+</center>
+
+<hr>
+<h2>Contents</h2>
+<a href="#Introduction">Introduction</a><br>
+<a href="#AppleScript">AppleScript</a><br>
+<a href="#JavaScript">JavaScript</a><br>
+<a href="#PascalControl">Scripting under Pascal control</a><br>
+<a href="#PascalBridge">Pascal and Scripting Bridge</a><br>
+<a href="#MiscNotes">Misc. notes</a><br>
+<p>
+<hr>
+
+
+<a name="Introduction"></a><h2>Introduction</h2>
+
+Many apps on the Mac can be automated, meaning you can write scripts to control
+them externally. Apps that can be manipulated this way include all of Apple's
+free apps, such as the iWork suite (Numbers, Pages, Keynote), Safari, 
+iTunes, GarageBand and others. Even Xcode can be scripted. Notably, 
+Microsoft Office apps can be completely controlled by external software, 
+similar to what you can do with them via COM Automation on Windows. This is 
+true for Excel, Word, PowerPoint, OneNote and Outlook.<p>
+
+You can use AppleScript, JavaScript or Objective C to control apps on the Mac.
+Since <a href="https://sourceforge.net/projects/freepascal/files/Mac%20OS%20X">Free Pascal</a>
+has an <a href="http://wiki.freepascal.org/FPC_PasCocoa">Objective Pascal</a>
+dialect, you can use it in place of Objective C. 
+You can also execute AppleScript and JavaScript scripts under Pascal control.<p>
+
+The sections below include code examples in several languages for controlling
+the Numbers spreadsheet app. All Macs should already have Numbers. 
+If not, just install it via the 
+<a href="https://itunes.apple.com/us/app/numbers/id409203825?mt=12">Mac App Store</a>.<p>
+
+Source code for the examples is available <a href="MacAuto.zip">here</a>.<p>
+<hr>
+
+
+<a name="AppleScript"></a><h2>AppleScript</h2>
+
+Traditionally scripting on the Mac was done with
+<a href="https://developer.apple.com/library/content/documentation/AppleScript/Conceptual/AppleScriptLangGuide/introduction/ASLR_intro.html">AppleScript</a>,
+its built-in scripting language. This is still the most reliable and best-documented
+way of scripting on the Mac. You can create an <b>.applescript</b> file with 
+<a href="https://developer.apple.com/library/content/documentation/AppleScript/Conceptual/AppleScriptX/Concepts/work_with_as.html">Script Editor</a>
+(under Applications/Utilities),
+or you can use a text editor such as <a href="https://code.visualstudio.com">Visual Studio Code</a>,
+which also supports AppleScript syntax highlighting. You can run the script in 
+Script Editor or from the command line with the
+<a href="https://ss64.com/osx/osascript.html">osascript</a> utility.<p>
+
+Any app that can be scripted includes a scripting "dictionary". You can open any
+dictionary in Script Editor to see the AppleScript, JavaScript or
+Objective C syntax for the classes and properties available to your scripts
+with that app. And since the dictionary is just an XML file, you can also 
+open it with a text editor. For example, Numbers' dictionary is file Numbers.sdef 
+in the Numbers.app/Contents/Resources folder.<p>
+
+Here's an example script that manipulates the Numbers app.
+In AppleScript, code comments are indicated by double hyphens (--).<p>
+
+<pre><code class="applescript">try
+  tell application "Numbers"
+
+    log name & " " & version --output app's name and version
+
+    set numDoc to make new document with properties {name:"My Doc"} --create new document
+
+    set name of sheet 0 of numDoc to "My Sheet" --change sheet's tab
+
+    set numCell to cell 2 of row 2 of table 0 of sheet 0 of numDoc
+    --get upper left-most non-header cell of doc's first sheet
+
+    tell numCell --set cell's properties
+      set value to 1.23
+      set font size to 15
+    end tell
+
+    activate --move app to foreground
+
+  end tell
+	
+on error errMsg number errorNumber
+  return errMsg
+end try
+</code></pre>
+
+To run this example script yourself, you can open file <b>testnumbers.applescript</b>
+in Script Editor, then click the Run button. You can also run it from
+the command line in a Terminal window like this:<p>
+
+<pre><code class="bash">osascript testnumbers.applescript</code></pre><p>
+<hr>
+
+
+<a name="JavaScript"></a><h2>JavaScript</h2>
+
+OS X 10.10 (Yosemite) introduced 
+<a href="https://developer.apple.com/library/content/releasenotes/InterapplicationCommunication/RN-JavaScriptForAutomation/Articles/Introduction.html#//apple_ref/doc/uid/TP40014508-CH111-SW1">support for JavaScript</a> in Script Editor.
+OS X 10.11 (El Capitan) added support for debugging JavaScript in Safari.
+This means that you can now develop scripts using a more familiar language.<p>
+
+Here's the Numbers example as JavaScript:<p>
+
+<pre><code class="javascript">try {
+  var numApp = Application("Numbers");
+
+  console.log(numApp.name() + " " + numApp.version());
+
+  var numDoc = numApp.Document({name:"My Doc"}).make();
+
+  numDoc.sheets[0].name = "My Sheet";
+
+  var numCell = numDoc.sheets[0].tables[0].rows[1].cells[1];
+
+  numCell.value = 1.23;
+  numCell.fontSize = 15;
+
+  numApp.activate();
+
+} catch(e) {
+  e.message;
+}
+</code></pre>
+
+Like the AppleScript example above, you can open file <b>testnumbers.scpt</b>
+in Script Editor and click the Run button. Or you can run it from the
+command line:<p>
+
+<pre><code class="bash">osascript testnumbers.scpt</code></pre><p>
+<hr>
+
+
+<a name="PascalControl"></a><h2>Scripting under Pascal control</h2>
+
+The Foundation framework includes the Objective C
+<a href="https://developer.apple.com/documentation/foundation/nsapplescript?language=objc">NSAppleScript</a>
+class. You can use this class in your Pascal app to execute a file containing
+AppleScript or a text string in your program containing AppleScript.
+And despite its name, you can also use NSAppleScript to execute
+JavaScript script files (.scpt).<p>
+
+Here's an example Pascal program that can run any of the example script files.<p>
+
+<pre><code class="delphi">program TestScriptFile;
+
+{$mode objfpc}{$H+}
+{$modeswitch objectivec2}
+
+uses
+  SysUtils,
+{$IFDEF NoCocoaAll}
+  Foundation;
+{$ELSE}
+  CocoaAll;
+{$ENDIF}
+
+function RunScript(const ScriptFName : string;
+                     out ErrorMsg    : string) : Boolean;
+var
+  ScriptURL : NSURL;
+  ScriptObj : NSAppleScript;
+  ErrorInfo : NSDictionary;
+  EventDesc : NSAppleEventDescriptor;
+
+begin
+  Result := False;
+  ErrorMsg := '';
+
+  if (Copy(ScriptFName, 1, 5) = 'http:') or
+     (Copy(ScriptFName, 1, 6) = 'https:') then
+    ScriptURL := NSURL.URLWithString(NSSTR(PAnsiChar(ScriptFName)))
+  else
+    ScriptURL := NSURL.fileURLWithPath(NSSTR(PAnsiChar(ScriptFName)));
+
+  ScriptObj := NSAppleScript.alloc.initWithContentsOfURL_error(
+                ScriptURL, @ErrorInfo);
+  if not Assigned(ScriptObj) then
+    begin
+    ErrorMsg := 'Unable to load script:'#10 +
+                NSString(ErrorInfo.objectForKey(NSAppleScriptErrorMessage)).UTF8String;
+    Exit;
+    end;
+
+  try
+    EventDesc := ScriptObj.ExecuteAndReturnError(@ErrorInfo);
+    if not Assigned(EventDesc) then
+      begin
+      ErrorMsg := 'Unable to execute script:'#10 +
+                  NSString(ErrorInfo.objectForKey(NSAppleScriptErrorMessage)).UTF8String;
+      Exit;
+      end;
+    if (EventDesc.stringValue.UTF8String &lt;> '') and
+       (EventDesc.stringValue.UTF8String &lt;> 'true') then
+      begin
+      ErrorMsg := 'Error executing script:'#10 +
+                  EventDesc.stringValue.UTF8String;
+      Exit;
+      end;
+
+    Result := True;
+
+  finally
+    ScriptObj.release;
+  end;
+end;
+
+
+var
+  ErrorMsg : string;
+begin
+  if ParamStr(1) = '' then
+    begin
+    WriteLn('No script file specified.');
+    Halt(1);
+    end;
+
+  if not RunScript(ParamStr(1), ErrorMsg) then
+    begin
+    WriteLn(ErrorMsg);
+    Halt(1);
+    end;
+end.
+</code></pre><p>
+
+After compiling <b>testscriptfile.pas</b>, you can use this program to run a script 
+from the command line like this:<p>
+
+<pre><code class="bash">./testscriptfile testnumbers.applescript</code></pre><p>
+
+<h3>Embedded AppleScript</h3>
+
+If you want to generate your script on the fly and dispense with an external
+script file, you can put AppleScript in a text string. Use the NSAppleScript
+method initWithSource to load the script instead of initWithContentsOfURL_error.<p>
+
+Here's a fragment of code from the <b>testscriptembed.pas</b> example
+that shows how it's done to control the Pages app:<p>
+
+<pre><code class="delphi">  ScriptStr :=
+   'try'#10 +
+   '  tell application "Pages"'#10 +
+   '    log name & " " & version'#10 +
+   '    set pagesDoc to make new document'#10 +
+   '    tell pagesDoc'#10 +
+   '      set size of body text to 15'#10 +
+   '      set body text to "Howdy there!"'#10 +
+   '    end tell'#10 +
+   '    activate'#10 +
+   '  end tell'#10 +
+   'on error errMsg number errorNumber'#10 +
+   '  return errMsg'#10 +
+   'end try';
+
+  ScriptObj := NSAppleScript.alloc.initWithSource(NSSTR(PAnsiChar(ScriptStr)));
+</code></pre><p>
+<hr>
+
+
+<a name="PascalBridge"></a><h2>Pascal and Scripting Bridge</h2>
+
+<a href="https://developer.apple.com/library/content/documentation/Cocoa/Conceptual/ScriptingBridgeConcepts/Introduction/Introduction.html">Scripting Bridge</a>
+is a framework that allows you to control other programs from compiled code
+rather than using AppleScript or JavaScript, but it requires some preparation
+before you can start programming.<p>
+
+The first step is to create a header file for the app you want to script.
+For example, to create Numbers.h, enter this at the command line:<p>
+
+<pre><code class="bash">sdef "/Applications/Numbers.app" | sdp -fh --basename Numbers</code></pre><p>
+
+The resulting Numbers.h header file can then be used with Objective C and
+Swift code.<p>
+
+Since Pascal can't work directly with a header file, you also have
+to create an interface unit by parsing the header file. You can use the
+framework parser from <a href="https://github.com/genericptr">here</a>
+to do that.<p>
+
+Finally, since the framework parser typically doesn't do a perfect job, you'll
+probably need to manually tweak the resulting Pascal interface unit to get it to
+compile. This has already been done for you with Numbers, Pages and Keynote;
+Pascal interface units for those apps are included with the examples.<p>
+
+Here's the Numbers example as Pascal (<b>testnumbers.pas</b>):<p>
+
+<pre><code class="delphi">program TestNumbers;
+
+{$mode objfpc}{$H+}
+{$modeswitch objectivec2}
+
+uses
+  SysUtils,
+{$IFDEF NoCocoaAll}
+  Foundation,
+{$ELSE}
+  CocoaAll,
+{$ENDIF}
+  ScriptingBridge,
+  Numbers;
+
+var
+  NumApp  : NumbersApplication;
+  NumDoc  : NumbersDocument;
+  NumCell : NumbersCell;
+begin
+  try
+    NumApp := SBApplication.applicationWithBundleIdentifier(NSSTR('com.apple.iWork.Numbers'));
+    if not Assigned(NumApp) then
+      begin
+      WriteLn('Unable to start Numbers.');
+      Halt(1);
+      end;
+
+     {Output app's name and version}
+    WriteLn(NumApp.name.UTF8String, ' ', NumApp.version.UTF8String);
+
+     {Create and add a document}
+    NumDoc := class_createInstance(
+               NumApp.classForScriptingClass(NSSTR('document')), 0).
+                initWithProperties(NSDictionary.dictionaryWithObject_forKey(
+                                    NSSTR('My Doc'), NSSTR('name'))).autorelease;
+    NumApp.documents.addObject(NumDoc);
+
+     {Change sheet's tab}
+    NumbersSheet(NumDoc.sheets.objectAtIndex(0)).setName(NSSTR('My Sheet'));
+
+     {New document will contain one sheet with one table. Get second cell
+       of second row in table.}
+    NumCell := NumDoc.sheets.objectAtIndex(0).tables.objectAtIndex(0).
+                rows.objectAtIndex(1).cells.objectAtIndex(1);
+
+     {Set cell's properties}
+    NumCell.setValue(NSNumber.numberWithDouble(1.23));
+    NumCell.setFontSize(15);
+
+     {Move app to foreground}
+    NumApp.activate;
+
+  except on E:Exception do
+    begin
+    WriteLn(E.Message);
+    Halt(1);
+    end;
+  end;
+
+end.
+</code></pre><p>
+<hr>
+
+
+<a name="MiscNotes"></a><h2>Misc. notes</h2>
+<ol>
+  <li>While many Mac apps are scriptable, they may not be <i>fully</i> scriptable.
+      For example, although you can create nice charts with Numbers
+      interactively, the NumbersChart class is empty. By contrast,
+      the Microsoft Office apps for Mac are fully scriptable, on a par with
+      their Windows counterparts. (The Excel.sdef dictionary file is 20 times 
+      the size of the Numbers.sdef file.)<p>
+
+  <li>Since programming with the Scripting Bridge can be trickier than working
+      with AppleScript in Script Editor, you might start by making sure
+      what you want to do can be done in AppleScript <i>before</i> you try
+      to do it in Pascal.<p>
+
+  <li>Note that there are <a href="https://developer.apple.com/library/content/qa/qa1888/_index.html">restrictions</a>
+      on scripting in a sandboxed app. Follow these 
+      <a href="https://www.objc.io/issues/14-mac/sandbox-scripting">suggestions</a>
+      if your app will be sandboxed.<p>
+
+  <li>To simplify scripting with Swift, use the
+      <a href="https://github.com/tingraldi/SwiftScripting">tools</a> described in this
+      <a href="https://medium.com/brightdigit/scriptingbridge-with-swift-communicating-with-apps-using-applescript-and-swift-afaffaabbcbe">article</a>.
+</ol>
+<hr>
+
+
+Copyright 2018 by Phil Hess.<p>
+macpgmr (at) icloud (dot) com<p>
+First posted Feb. 20, 2018; last edited Feb. 20, 2018.<p>
+Code syntax highlighting done with <a href="https://highlightjs.org">highlight.js</a>.<p>
+
+</body>
+
+</html>
