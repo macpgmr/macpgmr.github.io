@@ -1,3 +1,8 @@
+Releaase 20-Feb-2018 of p4g.zip
+
+- Minor update to getforecast example server app.
+
+
 Release 15-Feb-2018 of p4g.zip
 
 - Minor update to BoxCast example app.
