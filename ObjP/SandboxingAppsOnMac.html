@@ -1,0 +1,324 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2018 Phil Hess-->
+<html>
+
+<head>
+
+<title>Sandboxing Apps on Mac</title>
+<style type="text/css">
+  BODY { font: 14px/19px "Helvetica Neue", Arial, sans-serif; background-color: #fff; color: #333; }
+</style>
+
+<meta NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</head>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<body>
+
+<center>
+<h1>Sandboxing Apps on Mac</h1>
+</center>
+
+<hr>
+<h2>Contents</h2>
+<a href="#Introduction">Introduction</a><br>
+<a href="#Requirements">Requirements</a><br>
+<a href="#Enabling">Enabling Sandboxing</a><br>
+<a href="#Entitlements">Adding Entitlements</a><br>
+<a href="#MiscNotes">Misc. notes</a><br><p>
+<hr>
+
+
+<a name="Introduction"></a><h2>Introduction</h2>
+
+Apple covers app sandboxing in some detail
+<a href="https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AboutAppSandbox/AboutAppSandbox.html#//apple_ref/doc/uid/TP40011183-CH1-SW1">here</a>
+and <a href="https://developer.apple.com/app-sandboxing/">here</a>. 
+Sandboxing is required for apps submitted to the Mac App Store, but it's
+also recommended for apps that you distribute yourself outside the App Store.
+But why would you want to do the extra work?<p>
+
+One reason to sandbox is that it means you're ready to go if you decide 
+someday to submit your app to the App Store. For example, all of Microsoft's
+enormous Office apps for Mac are sandboxed, yet they're not distributed
+via the App Store. Clearly Microsoft is prepared if they someday choose 
+to go that route.<p>
+
+A less obvious reason is that going through the process of sandboxing 
+can result in a better app, even if you won't be submitting it to the
+App Store, or even if you don't ultimately distribute the app sandboxed.<p>
+
+Sandboxing forces you to go through an inventory
+of just what files, resources and services your app requires. You then
+request only those things and nothing more. Sandboxing's point of the view 
+is that of the user, not you. After all, it's the user's computer,
+not yours, and the user is <i>allowing</i> your app to execute on their 
+computer and access their files and resources. Limiting your app to
+only what it needs and accessing those things properly is one
+way of honoring the user's point of view. (Plus, users are less and less
+tolerant of apps that are distributed and implemented  
+like in the old days: zipped, unsigned, doing whatever they want.)<p>
+<hr>
+
+
+<a name="Requirements"></a><h2>Requirements</h2>
+
+<ol>
+  <li>Cocoa app. If you're using Lazarus, make sure you compile your app
+      with the Cocoa widgetset, not the Carbon widgetset.<p>
+  <li>Apple Developer ID for codesigning. Only codesigned apps can be
+      sandboxed.<p>
+  <li>Text editor for creating simple files to do the codesigning.
+      If you're using Xcode, you do everything in Xcode, but if you're using
+      Lazarus or you compile with your own scripts from the command
+      line, you'll have to do the signing yourself manually.
+</ol>
+<hr>
+
+
+<a name="Enabling"></a><h2>Enabling Sandboxing</h2>
+
+To get started, enable sandboxing for your app. This is really quite simple.
+Create a .plist entitlements file. This is just an XML file that you can
+create with a text editor. For example, you might create a file named 
+<b>myapp-entitlements.plist</b> that looks this:<p>
+
+<pre><code class="xml"><?xml version="1.0" encoding="UTF-8"?>&lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+&lt;plist version="1.0">
+&lt;dict>
+    &lt;key>com.apple.security.app-sandbox&lt;/key>
+    &lt;true/>
+&lt;/dict>
+&lt;/plist>
+</code></pre>
+
+To check the syntax of your entitlements file, use the <b>plutil</b> utility:<p>
+
+<pre><code class="bash">plutil myapp-entitlements.plist
+</code></pre>
+
+Now add the entitlements file to the script that you use to codesign your
+app. The script should look something like this (substitute your name and ID):<p>
+
+<pre><code class="bash">codesign --force --deep --verbose --sign "Developer ID Application: Your Name (Your ID)" --entitlements myapp-entitlements.plist "My App.app"
+</code></pre>
+
+After running the script, check that everything went okay with codesigning
+by entering this:<p>
+
+<pre><code class="bash">spctl --assess --verbose --type execute "My App.app"
+</code></pre>
+
+Now start your app and see what no longer works.<p>
+<hr>
+
+
+<a name="Entitlements"></a><h2>Adding Entitlements</h2>
+
+Entitlement keys are documented 
+<a href="https://developer.apple.com/library/content/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW1">here</a>.
+
+<h3>File menu</h3>
+
+If your app has a File menu with Open, Save and Save As commands, you'll
+find these don't work by default in a sandboxed app. Add this to your
+entitlements file and run your codesigning script again:<p>
+
+<pre><code class="xml">    &lt;key>com.apple.security.files.user-selected.read-write&lt;/key>
+    &lt;true/>
+</code></pre>
+
+Now the commands should work.
+
+<h3>Recent files</h3>
+
+Normally Cocoa manages the list of recently opened files automatically in
+an app that has an Open Recent submenu. When the app opens a file, Cocoa adds
+the file's name to the Open Recent submenu. Later, when you choose this
+file from the Open Recent submenu, it reopens.<p>
+
+This system does not appear to work with Lazarus apps compiled with the
+Cocoa widgetset. With Lazarus, everything is done manually, from creating
+the main menu to opening files. This probably interferes with the normal
+Cocoa system of opening and managing recent files.<p>
+
+You can create and manage your own Open Recent submenu, but when your
+sandboxed app tries to open a recent file (from a previous session), 
+it gets blocked because macOS has no way of knowing that the file was selected 
+originally by the user (meaning it's okay to open). It just thinks you're
+attempting to open an arbitrary file, which is not allowed. Cocoa has a 
+system for keeping track of recently opened files, it's just that Lazarus apps 
+don't seem to be able to utilize it.
+
+<h3>Drag and drop</h3>
+
+Dragging and dropping a file on your app to open the file still works
+in a sandboxed app, as does double-clicking the file to open it in your app.
+
+<h3>Temporary files</h3>
+
+On Mac, Free Pascal's <b>GetTempDir</b> and <b>GetTempFileName</b> functions
+use the value of the TMPDIR environment variable to determine the path
+where temporary files should be created. The path will look something
+like this:<p>
+
+<pre><code class="bash">/var/folders/x4/s130kfgx3fngc3w9rg5v8gr80000gn/T/
+</code></pre>
+
+In a sandboxed app, this path changes automatically to include the 
+bundle ID of your app. For example:<p>
+
+<pre><code class="bash">/var/folders/x4/s130kfgx3fngc3w9rg5v8gr80000gn/T/com.mydomain.myapp
+</code></pre>
+
+As long as you're using those functions consistently throughout your code,
+you shouldn't have to change anything for a sandboxed app.
+
+<h3>Caches, databases, etc. (the sandbox "Container")</h3>
+
+The first time you run a sandboxed app, macOS creates a "container" folder for
+the app in Library/Containers under the user's home folder. It uses the 
+app's bundle ID to name the container folder. This container is for the
+app's sole use; other apps do not have access to the app's container folder.<p>
+
+You can think of the app's container folder as a kind of "private" home folder.
+It has its own Library and Documents folders, for example, so if you're 
+already using those locations to store files such as databases that
+persist across runs of your app, you may not have to make any changes
+to your code.<p>
+
+If you're using the Foundation framework's
+<a href="https://developer.apple.com/documentation/foundation/1413045-nshomedirectory?language=objc">NSHomeDirectory</a>
+function, when your app is sandboxed this function will point to the container 
+folder instead of the user's normal home folder.
+
+<h3>Preferences</h3>
+
+Normally you use the Foundation framework's
+<a href="https://developer.apple.com/documentation/foundation/nsuserdefaults?language=objc">NSUserDefaults</a> 
+class to read and write app preferences. Preferences will be stored in the
+Library/Preferences folder under the user's home folder. NSUserDefaults
+will read and write a file using your app bundle ID for the file name with 
+a .plist extension. Your code doesn't access this file directly.<p>
+
+In a sandboxed app, preferences are stored in the Library/Preferences folder
+in your app's container. If you're using NSUserDefaults, you don't have to
+make any changes.<p>
+
+See the <b>NSMisc.pas</b> unit from 
+<a href="https://macpgmr.github.io/ObjP/nsunits-src.zip">here</a>
+for examples of how to use NSUserDefaults.
+
+<h3>Internet access</h3>
+
+By default, attempting to access the Internet in a sandboxed app will result
+in a "Host name resolution failed" error. Enable internet access by adding
+this entitlement:<p>
+
+<pre><code class="xml">    &lt;key>com.apple.security.network.client&lt;/key>
+    &lt;true/>
+</code></pre>
+
+Note that OpenSSL-based HTTP clients are not supported in sandboxed apps. 
+This includes Indy, Synapse and FPC's HTTP client. OpenSSL on Mac has been
+<a href="https://developer.apple.com/library/content/documentation/Security/Conceptual/cryptoservices/SecureNetworkCommunicationAPIs/SecureNetworkCommunicationAPIs.html#//apple_ref/doc/uid/TP40011172-CH13-SW3">deprecated</a>
+for a long time, so you should be using one of Apple's APIs instead.<p>
+
+If you need to make GET or POST requests, you can use the <b>ns_url_request.pas</b>
+unit from <a href="https://macpgmr.github.io/ObjP/nsunits-src.zip">here</a>.
+It uses the Foundation framework's 
+<a href="https://developer.apple.com/documentation/foundation/nsurlconnection?language=objc">NSURLConnection</a> class.
+
+<h3>Printing</h3>
+
+The Print dialog still displays by default in a sandboxed app,
+but the Print button will be disabled. Add this entitlement to enable
+the Print button:<p>
+
+<pre><code class="xml">    &lt;key>com.apple.security.print&lt;/key>
+    &lt;true/>
+</code></pre>
+
+<h3>Clipboard</h3>
+
+The AppKit framework's 
+<a href="https://developer.apple.com/documentation/appkit/nspasteboard?language=objc">NSPasteboard</a> 
+class still works in a sandboxed app.
+
+<h3>Scripting</h3>
+
+As indicated in Apple's
+<a href="https://developer.apple.com/library/content/qa/qa1888/_index.html">technical note</a>,
+there are restrictions on scripting by sandboxed apps. Here are
+several workarounds.<p>
+
+<ol>
+<li>If the app you want to script has "access groups," you can add 
+entitlements for them. The example cited in Apple's docs is for the
+macOS Mail program, which has several access groups. To enable just the 
+ability to compose e-mails via automation, add this:
+<pre><code class="xml">    &lt;key>com.apple.security.scripting-targets&lt;/key>
+    &lt;dict>
+        &lt;key>com.apple.mail&lt;/key>
+        &lt;array>
+            &lt;string>com.apple.mail.compose&lt;/string>
+        &lt;/array>
+    &lt;/dict>
+</code></pre>
+
+You can determine the names of any access groups by looking in the app's
+<b>.sdef</b> file (normally in the app's Resources folder).<p>
+
+<li>If the app you want to script does not have access groups, you
+can request a
+<a href="https://developer.apple.com/library/content/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html#//apple_ref/doc/uid/TP40011195-CH5-SW1">temporary exception</a>
+for it. For example, Microsoft Excel does not have access groups, so add this
+to enable scripting access for the entire Excel app:
+
+<pre><code class="xml">    &lt;key>com.apple.security.temporary-exception.apple-events&lt;/key>
+    &lt;string>com.microsoft.Excel&lt;/string>
+</code></pre>
+
+<li>Note that word "temporary." To avoid losing the ability to script an app
+some time in the future, try the suggestions given in
+<a href="https://www.objc.io/issues/14-mac/sandbox-scripting">this article</a>.
+</ol>
+
+More information about scripting with Pascal is
+<a href="https://macpgmr.github.io/ObjP/MacAutomationWithPascal.html">here</a>.<p>
+<hr>
+
+
+<a name="MiscNotes"></a><h2>Misc. notes</h2>
+<ol>
+  <li>To revert to a normal non-sandboxed app, just recompile your app. 
+      (Entitlements are stored by codesign in the app's executable.)
+      Then delete your app's container from /Library/Containers under
+      the user's home folder.<p>
+
+  <li>A quick way to determine if an app is sandboxed is to look in the
+      /Library/Containers folder. If you don't see a container folder
+      for the app (assuming it's been run at least once), then it's
+      not sandboxed. You'll notice that most of Apple's apps are sandboxed, 
+      as are Microsoft's.<p>
+
+  <li>Although unrelated to sandboxing, if you're distributing your app 
+      yourself, be sure to codesign the app's .dmg installer too. Example:<p>
+<pre><code class="bash">codesign --force --verbose --sign "Developer ID Application: Your Name (Your ID)" MyApp.dmg
+spctl --assess --verbose --type install MyApp.dmg
+</code></pre>
+</ol>
+<hr>
+
+Copyright 2018 by Phil Hess.<p>
+macpgmr (at) icloud (dot) com<p>
+First posted Feb. 25, 2018; last edited Feb. 25, 2018.<p>
+Code syntax highlighting done with <a href="https://highlightjs.org">highlight.js</a>.<p>
+
+</body>
+
+</html>
