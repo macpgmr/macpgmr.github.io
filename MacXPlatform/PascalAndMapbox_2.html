@@ -1,0 +1,345 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2018 Phil Hess-->
+<html>
+
+<head>
+
+<title>Pascal and Mapbox - Part 2</title>
+<style type="text/css">
+  BODY { font: 14px/19px "Helvetica Neue", Arial, sans-serif; background-color: #fff; color: #333; }
+</style>
+
+<meta NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</head>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<body>
+
+<center>
+<h1>Pascal and Mapbox</h1>
+<h2>Part 2: macOS and Lazarus</h2>
+</center>
+<hr>
+
+
+<h2>Contents</h2>
+<a href="#Introduction">Introduction</a><br>
+<a href="#SettingUp">Setting up</a><br>
+<a href="#Installing">Installing in Lazarus</a><br>
+<a href="#Using">Using the TMbMap custom control</a><br>
+<a href="#Deploying">Deploying your app</a><br>
+<a href="#Example">BoxCast LCL: an example app</a><br>
+<a href="#MiscNotes">Misc. notes</a><br><p>
+<hr>
+
+
+<a name="Introduction"></a><h2>Introduction</h2>
+
+On macOS, <a href="https://mapbox.github.io/mapbox-gl-native/macos">Mapbox</a>
+is a 64-bit framework. There are two ways you can use it with Pascal:<p>
+
+<ul>
+  <li>Xcode (what the Mapbox macOS SDK was designed for)<p>
+  <li>Lazarus (64-bit Cocoa widgetset to use the framework, but any platform 
+      can be used for map design)
+</ul>
+
+We'll start with Lazarus and cover Xcode in <a href="PascalAndMapbox_3.html">Part 3</a>.<p>
+
+With Lazarus, you can use the <b>TMbMap</b> custom control, which wraps 
+portions of the Mapbox framework. You can install and use this control in 
+Lazarus on any platform, but it will display a map only in apps compiled 
+with the 64-bit Cocoa widgetset.<p>
+<hr>
+
+
+<a name="SettingUp"></a><h2>Setting up</h2>
+
+Here are the steps. If you're working on a non-Mac platform, you only have
+to do steps 4 and 5.<p>
+
+<ol>
+  <li>Sign up for a Mapbox <a href="https://www.mapbox.com/pricing">account</a>. 
+      This is free to start using.<p>
+
+  <li>Download the Mapbox macOS SDK. These notes are based on work with the 
+      version 0.6.1 SDK, which you can download from
+      <a href="https://github.com/mapbox/mapbox-gl-native/releases/tag/macos-v0.6.1">here</a>.<p>
+
+      Double-click the .zip and move the resulting <b>mapbox-macos-sdk-0.6.1</b> 
+      folder anywhere you like.<p>
+
+  <li>Download the macOS framework Pascal interface units (AppKit, etc.) from
+      <a href="https://github.com/genericptr">here</a>.<p>
+
+      Double-click the .zip and move the resulting <b>MacOS_10_10-master</b> 
+      folder anywhere you like.<p>
+
+  <li>Download the macOS "extras" .zip from
+      <a href="https://macpgmr.github.io/ObjP/MacOS_10_10-extras.zip">here</a>.<p>
+
+      Don't let the name fool you. On non-Mac platforms, this is just a
+      dummy package that the custom control package requires.<p>
+
+      Double-click the .zip and move the resulting <b>MacOS_10_10-extras</b>
+      folder anywhere you like.<p>
+
+      On Mac, copy the folder's files to the MacOS_10_10-master folder.<p>
+
+  <li>Download the Pascal SDK for Mapbox from
+      <a href="https://macpgmr.github.io/ObjP/mapbox-macos-pascal.zip">here</a>.<p>
+
+      Double-click the .zip and move the resulting <b>mapbox-macos-pascal</b> 
+      folder anywhere you like.
+</ol>
+<hr>
+
+
+<a name="Installing"></a><h2>Installing in Lazarus</h2>
+
+To add the TMbMap custom control to Lazarus, you compile a series of
+packages.<p>
+
+<ol>
+  <li>Mac users with Lazarus IDE that was 
+      <a href="https://macpgmr.github.io/MacXPlatform/UsingCocoaFromTrunk.html">built with 64-bit Cocoa</a>: 
+      Copy <b>Mapbox.framework</b> from the
+      mapbox-macos-sdk folder to your <b>/Library/Frameworks</b> folder.<p>
+
+      Note that when rebuilt, this will link Lazarus to Mapbox.framework,
+      so don't remove it without first uninstalling the mapbox_ctrls package.<p>
+
+      All other users: Skip this step.<p>
+
+  <li>In Lazarus, choose Package | Open Package File and select
+      <b>macos_common_frameworks.lpk</b> in the MacOS_10_10-extras folder.<p>
+
+      Click Compile, but don't install it.<p>
+
+  <li>In Lazarus, choose Package | Open Package File and select
+      <b>mapbox_framework.lpk</b> in the mapbox-macos-pascal folder.<p>
+
+      Click Compile, but don't install it.<p>
+
+  <li>In Lazarus, choose Package | Open Package File and select
+      <b>mapbox_ctrls.lpk</b> in the mapbox-macos-pascal/mapbox_ctrls folder.<p>
+
+      Click Compile, then click Install to rebuild Lazarus. Once Lazarus
+      restarts, you'll see a Mapbox tab on the components palette.<p>
+</ol>
+<hr>
+
+
+<a name="Using"></a><h2>Using the TMbMap custom control</h2>
+
+In Lazarus, create a new project, then add a TMbMap control to the form.
+Compile and run the app. When it appears, the map will be blank.<p>
+
+For a 64-bit Cocoa app, look in the Console app's log. You'll see 
+a message indicating that no access token has been specified.<p>
+
+Sign in to your Mapbox <a href="https://mapbox.com">account</a> and create an
+access token. Typically you'll create one for each project. That way, you can
+delete or change a project's token without affecting any other projects.<p>
+
+Now add this line of code to your project's <b>.lpr</b> source file (before the
+first CreateForm line), substituting your access token (copy and paste):<p>
+
+<pre><code class="delphi">TMbMap.SetAccessToken('your-access-token-goes-here');
+</code></pre><p>
+
+You'll also need to add the <b>MbMap</b> unit to the .lpr file's uses.<p>
+
+Compile and run the app again. You should now see a map of the world.<p>
+
+<h3>Map details</h3>
+
+To have the map come up on a specified location, set the map control's 
+Latitude, Longitude and ZoomLevel properties. For example, to zoom in on
+the San Juan Mountains of southwest Colorado in the U.S. and display
+a detailed map, use these values:<p>
+
+<ul>
+  <li>Latitude: 37.92
+  <li>Longitude: -107.74
+  <li>ZoomLevel: 9
+  <li>StyleURL: mapbox://styles/mapbox/satellite-streets-v10
+</ul>
+<hr>
+
+
+<a name="Deploying"></a><h2>Deploying your app</h2>
+
+Your test app is currently loading the Mapbox.framework that you copied to
+/Library/Frameworks. With an app that you deploy to other users, you'll
+want to include Mapbox.framework in your app. Here's how to do that:<p>
+
+<ol>
+  <li>In Finder, control-click on your project's .app bundle and choose
+      Show Package Contents.<p>
+  <li>Create a folder named Frameworks in the Contents folder.<p>
+  <li>Copy and paste Mapbox.framework from the mapbox-macos-sdk folder
+      to your app's Frameworks folder.<p>
+  <li>In Lazarus, copy and paste these linker switches into Custom Options in
+      Project Options:<p>
+      <pre><code class="bash">-k-F"'$ProjPath()$NameOnly($TargetFile()).app/Contents/Frameworks'"
+-k-rpath
+-k@executable_path/../Frameworks
+</code></pre><p>
+      This will link your app's executable to the app bundle's 
+      Mapbox.framework (see <a href="https://www.manpagez.com/man/1/ld/">ld</a>)
+      and indicates where to look for the framework at runtime (see
+      <a href="https://www.manpagez.com/man/1/dyld/">dyld</a>).
+      (Note -k-F is the same as FPC's -Ff switch.)<p>
+
+      Now compile the app again.<p>
+</ol>
+<hr>
+
+
+<a name="Example"></a><h2>BoxCast LCL: an example app</h2>
+
+The source for BoxCast LCL, a more extensive example, is included in the
+mapbox-macos-pascal folder. BoxCast LCL is a Lazarus version of the 
+original Boxcast JavaScript app given
+<a href="https://macpgmr.github.io/MacXPlatform/PascalDynLibs_3.html#Mapbox">here</a>.<p>
+
+BoxCast LCL uses two additional .lpk packages, as well as the NDFD framework for
+retrieving weather forecast data to display on the map. BoxCast LCL also
+demonstrates how to do the following:<p>
+
+<ul>
+  <li>Add an event handler for when the map is double-clicked.
+  <li>Call a dynamic library (in NDFD.framework), passing the double-clicked
+      coordinates to retrieve weather forecast data for that location.
+  <li>Add a point to the map at the double-clicked coordinates, labeling
+      it with the retrieved data.
+  <li>Save and load app state (map center, zoom level, etc.).
+  <li>Display simple help for how to use the map.
+  <li>Display the app version from the app's Info.plist file in the About box.
+</ul>
+
+If you want to compile and run BoxCast LCL yourself, here are the steps:<p>
+
+<ol>
+  <li>Edit BoxCast LCL's <b>accesstoken.inc</b> and substitute your own Mapbox access
+      token.<p>
+
+  <li>Compile LazXProj's <b>appxproj.lpk</b> package in Lazarus, but don't 
+      install it. More information is
+      <a href="https://macpgmr.github.io/MacXPlatform/LazXProj.html">here</a>.<p>
+
+  <li>Open LazXProj's <b>fix_xproj.lpi</b> in Lazarus and compile it.<p>
+
+  <li>Open <b>boxcast_lcl.lpi</b> in Lazarus and create the BoxCast LCL.app 
+      bundle (in Project Options).<p>
+
+  <li>Follow steps 1-3 in deploying section above.<p>
+
+  <li>Create <b>NDFD.framework</b> and copy it to BoxCast LCL.app's Frameworks
+      folder (alongside Mapbox.framework). Instructions for creating
+      NDFD.framework are <a href="https://macpgmr.github.io/MacXPlatform/PascalDynLibs_2.html">here</a>.<p>
+
+  <li>Compile the <b>ndfd_framework_pkg.lpk</b> package in Lazarus, but don't 
+      install it.<p>
+
+  <li>Open <b>boxcast_lcl.lpi</b> in Lazarus and run it.
+</ol>
+
+For other platforms, you can still compile and run this app, although the
+map won't display. For non-Mac platforms, skip steps 4-6, but do
+create the NDFD <i>library</i> (ndfd.dll or 
+libndfd64.so) and copy it into the boxcast_lcl directory. With step 8, 
+be sure to select either the <b>Mac non-64-bit Cocoa</b> or the <b>Non-Mac</b> 
+build mode in Project Options, then compile and run.<p>
+<hr>
+
+
+<a name="MiscNotes"></a><h2>Misc. notes</h2>
+
+<ol>
+  <li>What about the possibility of a cross-platform TMbMap? Certainly the
+      Qt5 widgetset would be a good possibility. You would need a library that
+      wraps ("flattens") the Mapbox Qt SDK's C++ classes, similar to what 
+      the Qt5Pas library does now for the Qt5 C++ classes (the Qt5Pas library 
+      is used by the LCL Qt5 widgetset). Then you would need to implement 
+      qtmbmap.pas for TMbMap (analogous to cocoambmap.pas). For an example 
+      of a cross-platform custom control that has both Cocoa and Qt 
+      implementations, see TWebBrowser (source is 
+      <a href="https://macpgmr.github.io/MacXPlatform/lclwebbrowser-src.zip">here</a>).<p>
+
+  <li>A benefit of a cross-platform custom control is how it simplifies and
+      smooths the use of a disparate, alien library in a different setting,
+      in this case Lazarus. For example, look at BoxCast LCL's 
+      double-click handler. Nothing could be simpler or more Lazarus friendly:<p>
+      
+      <pre><code class="delphi">procedure TMainForm.MapDblClickMap(Sender    : TObject;
+                                   Latitude  : Double;
+                                   Longitude : Double);
+begin
+  if not Ndfd.LoadForecast(FloatToStr(Latitude, FmtSettings),
+                           FloatToStr(Longitude, FmtSettings),
+                           False) then
+    begin
+    MessageDlg('Unable to retrieve weather forecast data.', mtError, [mbOK], 0);
+    Exit;
+    end;
+
+  Map.AddPointAnnotation(Latitude, Longitude,
+                         'Today''s forecast',
+                         'High ' + Ndfd.GetMaxTemp(1) +
+                         ', Low ' + Ndfd.GetMinTemp(1));
+end;
+</code></pre><p>
+
+      How this is implemented underneath is of little interest to the 
+      user of the custom control. And in fact, the implementation can and will
+      change as needed, for example to add support for additional platforms.<p>
+
+      The big drawback of a custom control, though, is that it
+      requires an enormous amount of work to wrap an entire library,
+      involving countless decisions about implementation details and APIs,
+      all the while trying to preserve the possibility of cross-platform 
+      support.<p>
+
+      It's no different with TMbMap and so only a tiny portion of the 
+      underlying Mapbox library is currently wrapped by TMbMap. Part 3 
+      will show how working directly with the Mapbox library in Xcode opens up 
+      all of its functionality, although at the price of cross-platform code.<p>
+
+  <li>Since the Mapbox framework requires at least macOS 10.10, you can add
+      the <b>-WM10.10</b> switch in your project's Custom Options. That will
+      override Lazarus's default of 10.5 for 
+      <a href="https://www.manpagez.com/man/1/ld/">-macosx_version_min</a> with Cocoa.
+      You can also set 
+      <a href="https://developer.apple.com/library/content/documentation/General/Reference/InfoPlistKeyReference/Articles/LaunchServicesKeys.html#//apple_ref/doc/uid/20001431-113253">LSMinimumSystemVersion</a> 
+      in your project's Info.plist file to the same value, like this:<p>
+
+<pre><code class="xml">    &lt;key&gt;LSMinimumSystemVersion&lt;/key&gt;
+    &lt;string&gt;10.10&lt;/string&gt;
+</code></pre><p>
+
+  <li>Mapbox caches the imagery (tiles) it downloads. If you need to delete
+      the cache for some reason (for example, to test how long a map takes to
+      download), you can delete them. For example, the cached files for 
+      BoxCast LCL are stored in <b>~/Library/Caches/com.junk.BoxCast-LCL</b>
+      and <b>~/Library/Application Support/com.junk.BoxCast-LCL/.mapbox</b>.
+      As with the app's preferences file name (~/Library/Preferences/com.junk.BoxCast-LCL.plist),
+      the app's bundle ID is used to name the folders.<p>
+</ol>
+
+On to <a href="PascalAndMapbox_3.html">Part 3</a> ...<p>
+<hr>
+
+
+Copyright 2018 by Phil Hess.<p>
+macpgmr (at) icloud (dot) com<p>
+First posted March 16, 2018.<p>
+
+</body>
+
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2018 Phil Hess-->
+<html>
+
+<head>
+
+<title>Pascal and Mapbox - Part 1</title>
+<style type="text/css">
+  BODY { font: 14px/19px "Helvetica Neue", Arial, sans-serif; background-color: #fff; color: #333; }
+</style>
+
+<meta NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</head>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<body>
+
+<center>
+<h1>Pascal and Mapbox</H1>
+<h2>Part 1: The Road to Pascal</h2>
+</center>
+<hr>
+
+
+<h2>Contents</h2>
+<a href="#Introduction">Introduction</a><br>
+<a href="#Cross-Platform">Ways of doing cross-platform</a><br>
+<a href="#OnePlatformAtATime">One platform at a time</a><br><br>
+<a href="PascalAndMapbox_2.html">Part 2: macOS and Lazarus</a><br>
+<a href="PascalAndMapbox_3.html">Part 3: macOS and Xcode</a><br>
+<a href="PascalAndMapbox_4.html">Part 4: Pascal to JavaScript</a><br><p>
+<hr>
+
+
+<a name="Introduction"></a><h2>Introduction</h2>
+
+<a href="https://www.mapbox.com">Mapbox</a> is everywhere these days, or so it seems.
+Mapbox's JavaScript library was even the focus of a <a href="https://delftswa.gitbooks.io/desosa-2017/content/mapbox-gl-js/chapter.html">student book chapter</a>.
+And Mapbox the company was mentioned in a recent issue of 
+<a href="https://www.economist.com/news/business/21723173-not-all-roads-lead-google-maps-battle-territory-digital-cartography"><I>The Economist</I></a>.
+In the area I work in, lots of 
+<a href="https://www.mapbox.com/industries/agriculture">companies</a> 
+are using Mapbox. I know some of these companies and respect the programming
+they do. What did they know that I didn't? Maybe it was time to take a look
+at Mapbox and find out.<p>
+
+And so I did and now I'm a Mapbox user too. My needs are relatively modest
+at this point, so the Mapbox free tier account is fine. I can host my maps 
+and geographic data on Mapbox, with up to 50,000 map views per month
+at no charge.<p>
+
+Mapbox's business is hosting maps and data on their servers. If your needs are
+big enough, you pay for that service. But they also create a ton of open source
+software. In fact, they describe themselves as an 
+"<a href="https://www.mapbox.com/about/open/">open source company</a>."<p>
+
+You can use their software for free to access your maps and data in any app
+that you write, whether it's a Web app, desktop app, or mobile app. Currently
+I'm using <a href="https://www.mapbox.com/mapbox-gl-js/api">Mapbox GL JS</a>, 
+their WebGL-based JavaScript library, but there are a lot of native app
+options available too. If you look at the list of native SDKs, there appears
+to be something for everyone:<p>
+
+<ul>
+  <li>Android/Java
+  <li>iOS/Objective C and Swift
+  <li>macOS/Objective C and Swift
+  <li>Qt/C++
+</ul>
+
+(The full list is <a href="https://github.com/mapbox/mapbox-gl-native/blob/master/README.md">here</a>.)<p>
+
+Something for everyone except Pascal users, that is. Or is there something there 
+for us after all? Let's take a closer look.
+
+
+<hr>
+<a name="Cross-Platform"></a><h2>Ways of doing cross-platform</h2>
+
+With the Lazarus IDE for the Free Pascal compilers, it's an article of faith
+that "cross-platform" means the same interface everywhere and that all platforms
+where those interfaces have been implemented are equal in the eyes of the IDE.
+So if you design a form and write some code for it on one platform, you ought 
+to be able to take your source files and compile them with Lazarus on a 
+different platform. This works fairly well and is a noble sentiment, but in 
+practice some platforms are more "equal" others. This approach also has trouble 
+accommodating platforms such as mobile and the modern Web, which weren't around 
+when the original design was set in stone.<p>
+
+With Mapbox, cross-platform has a different meaning. Sure, there's the 
+native library that's used by all native SDKs, but you normally don't work with 
+it directly. Instead, you work with an SDK that's designed for a particular
+language and target. For example, if you're targeting iOS or macOS, you'll
+likely be using Objective C or Swift and so the Mapbox iOS and macOS SDKs provide a 
+framework library that exposes Objective C classes. If you're targeting Android, 
+you'll likely be using Java and so the Mapbox Android SDK provides Java classes. 
+If your app uses Qt 5, you'll work with the Mapbox Qt SDK's C++ classes. 
+And so on.<p>
+
+And so even though you'll be indirectly using the same speedy OpenGL-based 
+map engine that's at the heart of every native SDK, and you'll do similar things 
+in a similar fashion with any map (pan, zoom, annotate, etc.), you don't do it
+with common code. Instead, with Mapbox, cross-platform lies more in the 
+specifications for the maps (called styles) and geographic data (typically 
+vector tilesets) that you'll be using on all platforms, native and Web.<p>
+ 
+You can create styles and tilesets with the nifty online Mapbox 
+<a href="https://www.mapbox.com/mapbox-studio">Studio</a>, or you 
+can create them locally. A 
+<a href="https://www.mapbox.com/mapbox-gl-js/style-spec/">style</a> 
+is just a JSON file that you can edit with a text editor;
+<a href="https://www.mapbox.com/vector-tiles/">tilesets</a> 
+can be created from various file types common to desktop GIS, 
+such as shapefiles. In other words, you can do a lot of prep work without
+writing a line of code for any platform. It also means you can share map styles 
+with other developers and projects across all platforms. In fact, Mapbox 
+provides a number of 
+<a href="https://www.mapbox.com/api-documentation/#styles">standard styles</a> 
+that you're free to use.<p>
+
+
+<hr>
+<a name="OnePlatformAtATime"></a><h2>One platform at a time</h2>
+
+So where does that leave us as Pascal programmers? Well, in some ways, Mapbox's
+approach is to our advantage and means we can do this one bite at a time, like 
+eating the proverbial elephant. We don't need to come up with an omnibus 
+solution that covers all platforms. We can pick and choose 
+amongst the SDKs, both the ones available now and any future SDKs that Mapbox 
+or anyone else might create. (This is another advantage of Mapbox's approach: 
+they don't have to worry about a new or updated SDK affecting other 
+platforms.)<p>
+
+Looking at the available Mapbox SDKs, there are a couple obvious candidates
+that we can start with and create Pascal "SDKs" for:<p>
+
+<ul>
+  <li>macOS. Although the Mapbox macOS SDK is specific to macOS, a Lazarus
+      LCL control can be layered over it, thereby leaving open the possibility
+      for future cross-platform support.<p>
+  <li>JavaScript. The Mapbox GL library can be used both in Web apps (in a
+      browser) and for embedded maps in desktop apps (in a browser control). 
+      For an example, see the 
+      <a href="https://macpgmr.github.io/MacXPlatform/PascalDynLibs_3.html#Mapbox">BoxCast</a>
+      example app that's part of the Pascal for GIS Toolkit. Mapbox GL can also 
+      be used with apps created with FPC's Pas2JS "transpiler" if you have
+      a Pascal interface for Mapbox.<p>
+</ul>
+
+There are other possibilities as well, but let's start with these two.<p>
+
+On to <a href="PascalAndMapbox_2.html">Part 2</a> ...<p>
+<hr>
+
+
+Copyright 2018 by Phil Hess.<p>
+macpgmr (at) icloud (dot) com<p>
+First posted March 16, 2018.<p>
+
+</body>
+
+</html>

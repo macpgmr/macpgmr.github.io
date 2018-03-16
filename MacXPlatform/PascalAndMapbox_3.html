@@ -1,0 +1,239 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2018 Phil Hess-->
+<html>
+
+<head>
+
+<title>Pascal and Mapbox - Part 3</title>
+<style type="text/css">
+  BODY { font: 14px/19px "Helvetica Neue", Arial, sans-serif; background-color: #fff; color: #333; }
+</style>
+
+<meta NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</head>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<body>
+
+<center>
+<h1>Pascal and Mapbox</h1>
+<h2>Part 3: macOS and Xcode</h2>
+</center>
+<hr>
+
+
+<h2>Contents</h2>
+<a href="#Introduction">Introduction</a><br>
+<a href="#SettingUp">Setting up</a><br>
+<a href="#Installing">Installing</a><br>
+<a href="#Testing">Testing a simple Xcode project</a><br>
+<a href="#Example">BoxCast ObjP: an example app</a><br>
+<a href="#MiscNotes">Misc. notes</a><br><p>
+<hr>
+
+
+<a name="Introduction"></a><h2>Introduction</h2>
+
+When developing with Pascal in Xcode, you use the same Objective C classes 
+that you would in a Swift or Objective C app. You do this via code that
+you write in Free Pascal's 
+<a href="http://wiki.freepascal.org/FPC_PasCocoa#Objective-C_FPC_Compiler">Objective Pascal</a>
+dialect.<p>
+
+With Objective Pascal, you work directly with the
+<a href="https://mapbox.github.io/mapbox-gl-native/macos">Mapbox classes</a>; 
+there is no wrapper for the Mapbox framework, just an interface unit that 
+declares the Mapbox classes.<p>
+<hr>
+
+
+<a name="SettingUp"></a><h2>Setting up</h2>
+
+<ol>
+  <li>Follow the steps given in "Setting up" in
+      <a href="PascalAndMapbox_2.html#SettingUp">Part 2</a>.<p>
+
+  <li>Download ProjectXC from
+      <a href="https://macpgmr.github.io/ObjP/ProjectXC.html">here</a>.
+      ProjectXC contains a template for creating a
+      Pascal project to work with Mapbox in Xcode.<p>
+
+      Double-click the .zip and move the resulting folder anywhere you like.<p>
+
+  <li>Optionally, add Xcode support for
+      <a href="https://macpgmr.github.io/ObjP/Xcode_Highlighting.html">Pascal syntax highlighting</a>.<p>
+</ol>
+<hr>
+
+
+<a name="Installing"></a><h2>Installing</h2>
+<ol>
+  <li>Run the <b>compile-appkit.sh</b> script in the
+      <b>MacOS_10_10-master</b> folder.<p>
+
+      This script will compile common macOS interface units (AppKit, 
+      CoreLocation, etc.) to 
+      /Developer/ObjectivePascal/units/x86_64-darwin/macOS/NoCocoaAll.<p>
+
+  <li>Run the <b>compile-mapbox.sh</b> script in the 
+      <b>mapbox-macos-pascal</b> folder.<p>
+
+      This script will compile the Mapbox interface unit to 
+      /Developer/ObjectivePascal/units/x86_64-darwin/Mapbox/NoCocoaAll.<p>
+
+  <li>Compile ProjectXC's <b>makeproj</b> utility.
+</ol>
+
+<hr>
+
+
+<a name="Testing"></a><h2>Testing a simple Xcode project</h2>
+<ol>
+  <li>Create a new Xcode project from the ProjectXC <b>osx-mapbox</b> template
+      like this (substitute your own project path):<p>
+      <pre><code class="bash">./makeproj osx-mapbox ~/MyXcodeProjects/testmb1
+</code></pre><p>
+
+  <li>Open testmb1.xcodeproj in Xcode.<p>
+
+  <li>Copy <b>Mapbox.framework</b> from the mapbox-macos-sdk folder to your 
+      project's top-level folder (don't put it in the source subfolder or 
+      in the .xcodeproj subfolder).<p>
+
+  <li>Paste your Mapbox access token into the value for the 
+      <b>MGLMapboxAccessToken</b> key in the <b>Info.plist</b> file.<p>
+
+  <li>Choose Product | Run to compile and run your app. You should see
+      a map of the world.<p>
+</ol>
+
+Now enter some more interesting default settings for your map.<p>
+
+Click on <b>Main.storyboard</b> in the Project Navigator, then
+select the Map View and click the <b>Attributes inspector</b> in
+Utilities. Enter these values for the Map View:<p>
+
+<ul>
+  <li>Style URL: mapbox://styles/mapbox/satellite-streets-v10
+  <li>Latitude: 37.92
+  <li>Longitude: -107.74
+  <li>Zoom level: 9
+</ul>
+
+Now run the app again to zoom in on the San Juan Mountains of southwest Colorado
+in the U.S.<p>
+<hr>
+
+
+<a name="Example"></a><h2>BoxCast ObjP: an example app</h2>
+
+The source for BoxCast ObjP, a more extensive example, is included in the
+mapbox-macos-pascal folder. BoxCast ObjP is an Objective Pascal version 
+of the original Boxcast JavaScript app given
+<a href="https://macpgmr.github.io/MacXPlatform/PascalDynLibs_3.html#Mapbox">here</a>.<p>
+
+BoxCast ObjP uses the NDFD framework for retrieving weather forecast data 
+to display on the map. BoxCastObjP also demonstrates how to do the following:<p>
+
+<ul>
+  <li>Add an event handler for when the map is double-clicked.
+  <li>Call a dynamic library (in NDFD.framework), passing the double-clicked
+      coordinates to retrieve weather forecast data for that location.
+  <li>Add a point to the map at the double-clicked coordinates, labeling
+      it with the retrieved data.
+</ul>
+
+If you want to compile and run BoxCast ObjP yourself, here are the steps:<p>
+
+<ol>
+  <li>Copy <b>Mapbox.framework</b> from the mapbox-macos-sdk folder to the
+      top-level BoxCast_ObjP folder.<p>
+
+  <li>Create <b>NDFD.framework</b> and copy it to the BoxCast_ObjP
+      folder (alongside Mapbox.framework). Instructions for creating
+      NDFD.framework are <a href="https://macpgmr.github.io/MacXPlatform/PascalDynLibs_2.html">here</a>.<p>
+
+  <li>In the ndfd folder, run this script to compile the NdfdLib interface
+      unit to the "standard" location under /Developer/ObjectivePascal/units:<p>
+      <pre><code class="bash">./compile-ndfdlib-macos.sh Framework
+</code></pre><p>
+
+  <li>Open <b>BoxCast_ObjP.xcodeproj</b> in Xcode.<p>
+
+  <li>Paste your Mapbox access token into the value for the 
+      <b>MGLMapboxAccessToken</b> key in the <b>Info.plist</b> file.<p>
+
+  <li>Choose Product | Run to compile and run the app.<p>
+</ol>
+<hr>
+
+<a name="MiscNotes"></a><h2>Misc. notes</h2>
+
+<ol>
+  <li>Note the things that Cocoa provides without any effort on your part.
+      For example, it saves the app window's position and size. And Mapbox
+      saves its map location and zoom level automatically. You don't have
+      to do these things yourself.<p>
+
+      (With the standard Cocoa menus, you also get an About box without
+      any additional work. You can easily customize it by setting
+      the credits in the app delegate's displayAboutBox method
+      provided by the template.)<p>
+
+      Where does Cocoa save this information? Well, under ~/Library of
+      course, using the app's bundle ID (eg, com.mydomain.myapp). That's
+      one reason why it's important to use a unique bundle ID for each
+      app.<p>
+
+      Here are the ~/Library locations that your app uses:<p>
+
+      <ul>
+        <li>Preferences/bundle-ID.plist -- app preference settings that
+            you save with the Foundation
+            <a href="https://developer.apple.com/documentation/foundation/nsuserdefaults">NSUserDefaults</a>
+            class are saved in this file.
+        <li>Saved Application State/bundle-ID.savedState -- window position
+            and size are saved in the windows.plist file in this folder.
+        <li>Application Support/bundle-ID/.mapbox -- Mapbox caches data
+            in this hidden folder.
+        <li>Application Support/com.apple.sharedfilelist/com.apple.LSSharedFileList.ApplicationRecentDocuments/bundle-ID.sfl --
+            list of app's recently opened files are saved in this file.
+        <li>Caches/bundle-ID -- app caches data in this folder.
+      </ul><p>
+
+      From the user's perspective, uninstalling an app on macOS is simple:
+      just drag the app to the trash. But the above files stay behind.
+      That's fine if the user installs the app again (for example, a newer
+      version), because it will use the previous installation's preferences
+      and settings. But to completely uninstall an app you really need to 
+      delete the above files as well. You can also delete them to reset
+      an app, for example during testing.<p>
+
+  <li>By default, Xcode compiles all intermediate files and the .app bundle
+      to a folder for the app under ~/Library/Developer/Xcode/DerivedData.
+      You can change this for your app (under File | Project Settings)
+      or for any new app (Xcode | Preferences, on the Locations tab).<p>
+
+  <li>Note that there are two ways to set your app's Mapbox access token.
+      Setting it in the app's Info.plist file, as given in the examples
+      above, is the recommended way. However, since any user can look at your 
+      app's Info.plist file (it's just XML), you might want to set the access
+      token <a href="https://mapbox.github.io/mapbox-gl-native/macos/0.6.1/Classes/MGLAccountManager.html#/c:objc(cs)MGLAccountManager(cm)setAccessToken:">
+      in code</a>.
+</ol>
+
+On to <a href="PascalAndMapbox_4.html">Part 4</a> ...<p>
+<hr>
+
+
+Copyright 2018 by Phil Hess.<p>
+macpgmr (at) icloud (dot) com<p>
+First posted March 16, 2018.<p>
+
+</body>
+
+</html>

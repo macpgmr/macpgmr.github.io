@@ -1,4 +1,13 @@
-Releaase 20-Feb-2018 of p4g.zip
+Release 16-Mar-2018 of p4g.zip
+
+- To simplify using GDAL and NDFD libraries with Xcode on macOS:
+  - Added compile-gdal-macos.sh script for compiling GDAL unit to standard
+    location under /Developer/ObjectivePascal/units.
+  - Added compile-gdallib-macos.sh script for compiling NdfdLib unit to
+    standard location under /Developer/ObjectivePascal/units.
+
+
+Release 20-Feb-2018 of p4g.zip
 
 - Minor update to getforecast example server app.
 

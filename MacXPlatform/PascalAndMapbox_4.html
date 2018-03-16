@@ -1,0 +1,288 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Copyright 2018 Phil Hess-->
+<html>
+
+<head>
+
+<title>Pascal and Mapbox - Part 4</title>
+<style type="text/css">
+  BODY { font: 14px/19px "Helvetica Neue", Arial, sans-serif; background-color: #fff; color: #333; }
+</style>
+
+<meta NAME="AUTHOR" CONTENT="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</head>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<body>
+
+<center>
+<h1>Pascal and Mapbox</H1>
+<h2>Part 4: Pascal to JavaScript</h2>
+</center>
+<hr>
+
+
+<h2>Contents</h2>
+<a href="#Introduction">Introduction</a><br>
+<a href="#SettingUp">Setting up</a><br>
+<a href="#Using">Using the TMap class</a><br>
+<a href="#Example">BoxCast P2J: an example app</a><br>
+<a href="#MiscNotes">Misc. notes</a><br><p>
+<hr>
+
+
+<a name="Introduction"></a><h2>Introduction</h2>
+
+With Free Pascal's <a href="http://wiki.freepascal.org/pas2js">Pas2JS</a> 
+compiler, you can use Pascal instead of JavaScript to work with the 
+<a href="https://www.mapbox.com/mapbox-gl-js/api">Mapbox GL</a> JavaScript library.<p>
+
+With Pas2JS, you can use the Pascal <b>TMap</b> class, which provides access 
+to most of Mapbox's Map API.<p>
+<hr>
+
+
+<a name="SettingUp"></a><h2>Setting up</h2>
+
+<ol>
+  <li>Sign up for a Mapbox <a href="https://www.mapbox.com/pricing">account</a>
+      if you haven't already done so. This is free to start using.<p>
+
+  <li>Download the Pas2JS compiler (transpiler) and RTL from
+      <a href="ftp://ftpmaster.freepascal.org/fpc/contrib/pas2js">here</a>.<p>
+
+      Unzip this file anywhere you like; no installation is needed.<p>
+
+  <li>Download the PnJ .zip from
+      <a href="https://macpgmr.github.io/MacXPlatform/pnj.zip">here</a>.
+      This includes the Pascal interface unit for the Mapbox GL JavaScript
+      library.<p>
+
+      Unzip this file anywhere you like; no installation is needed.
+</ol>
+<hr>
+
+
+<a name="Using"></a><h2>Using the TMap class</h2>
+
+Keep the <a href="https://www.mapbox.com/mapbox-gl-js/api">Mapbox GL API</a> 
+handy while writing your code.<p>
+
+Here's a very simple JavaScript app that uses the Mapbox GL library:<p>
+
+<pre><code class="javascript">mapboxgl.accessToken = 'your-access-token-goes-here';
+var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/satellite-streets-v10',
+    center: [-107.74, 37.92],
+    zoom: 9
+});
+</code></pre><p>
+
+See the <a href="https://www.mapbox.com/mapbox-gl-js/api/#map">Map API</a>
+for information about the map options used.<p>
+
+To test this code, do the following:<p>
+
+<ol>
+  <li>Substitute your own access token.  Sign in to your Mapbox 
+      <a href="https://mapbox.com">account</a> and create an access token.
+  <li>Embed the script in an HTML file like in this
+      <a href="https://www.mapbox.com/mapbox-gl-js/example/simple-map">simple example</a>.
+  <li>Double-click the HTML file to open it in your browser.
+</ol>
+
+Here's the Pascal equivalent of the JavaScript code. (File <b>simple-map.pas</b>
+is included in the <b>simple-map</b> subdirectory of the PnJ download.)<p>
+
+<pre><code class="delphi">program SimpleMap;
+
+uses
+  JS,
+  MapboxGL;
+
+var
+  map : TMap;
+begin
+  accessToken := 'your-access-token-goes-here';
+  map := TMap.New(new(['container', 'map',
+                       'style', 'mapbox://styles/mapbox/satellite-streets-v10',
+                       'center', TJSArray._of(-107.74, 37.92),
+                       'zoom', 9.0]));
+end.
+</code></pre><p>
+
+See the <b>mapboxgl.pas</b> interface unit in the <b>package</b> subdirectory
+of the PnJ download for how <b>accessToken</b> and <b>TMap</b> are declared
+<b>external</b>. The JavaScript implementations are actually in file 
+<b>mapbox-gl.js</b> that you reference in your app's HTML file.<p>
+
+Note the nifty <b>new</b> function (in the JS unit) for creating 
+JavaScript objects (equivalent to { } ). And the handy <b>TJSArray._of</b> 
+class function for creating JavaScript arrays (equivalent to [ ] ).<p>
+
+To test this code, do the following:<p>
+
+<ol>
+  <li>Substitute your own access token.
+  <li>From the simple-map subdirectory, convert the Pascal to JavaScript with the 
+      transpiler like this (substitute the path to where you unzipped Pas2JS):<p>
+      <pre><code class="bash">yourpath/bin/pas2js -Jirtl.js -Jc -Fu../package simple-map.pas</code></pre><p>
+  <li>Double-click the <b>index.html</b> file in the simple-map subdirectory
+      to open it in your browser.
+</ol>
+
+To review the generated JavaScript, open file <b>simple-map.js</b> in a text editor
+or view the page source in your browser. Your code will be at the very end 
+of the file.<p>
+<hr>
+
+
+<a name="Example"></a><h2>BoxCast P2J: an example app</h2>
+
+The source for BoxCast P2J, a more extensive example, is included in
+the PnJ download.
+BoxCast P2J is a Pascal version of the original Boxcast JavaScript app given
+<a href="https://macpgmr.github.io/MacXPlatform/PascalDynLibs_3.html#Mapbox">here</a>
+and is functionally equivalent to the original.<p>
+
+BoxCast P2J demonstrates how to do the following things in Pascal:<p>
+
+<ul>
+  <li>Add a custom control (button) to the map.
+  <li>Add an event handler for the button, as well as handlers for when the 
+      map loads, when the map is clicked, and to change the cursor.
+  <li>Add an invisible "layer" to the map to detect clicking in a particular
+      region of the map.
+  <li>Display simple popup dialogs.
+  <li>Make an AJAX call to a server app (getforecast), passing the coordinates 
+      of the clicked point and using the results of the call.
+</ul>
+
+If you want to run Boxcast P2J yourself, here are the steps:<p>
+
+<ol>
+  <li>Substitute your own access token in <b>boxcast_config.pas</b>.<p>
+  <li>To test the AJAX call to the server, you'll need to compile the 
+      <b>NDFD</b> dynamic library (described
+      <a href="https://macpgmr.github.io/MacXPlatform/PascalDynLibs_2.html">here</a>)
+      and compile and set up the <b>getforecast</b> CGI app (described
+      <a href="https://macpgmr.github.io/MacXPlatform/PascalDynLibs_3.html#qooxdoo">here</a>).<p>
+      Edit boxcast_config.pas to use a non-local Web server.<p>
+      Note that you can run Boxcast P2J without doing this step, but you
+      won't be able to retrieve any forecast data. (See the note below
+      for more.)<p>
+  <li>From the boxcast subdirectory, convert Pascal to JavaScript with the 
+      transpiler like this (substitute the path to where you unzipped Pas2JS):<p>
+      <pre><code class="bash">yourpath/bin/pas2js -Jirtl.js -Jc -O- -Fu../package boxcast_p2j.pas</code></pre><p>
+  <li>Double-click the <b>index.html</b> file in the boxcast subdirectory
+      to open it in your browser.
+</ol>
+<hr>
+
+
+<a name="MiscNotes"></a><h2>Misc. notes</h2>
+
+<ol>
+  <li>The Pas2JS transpiler generates a lot of JavaScript, much more than if
+      you wrote the JavaScript yourself. Is this an issue? Well, in the
+      case of Mapbox apps it's probably moot. For example, the size of 
+      the generated boxcast_p2j.js is only about 1/10th the size of the
+      <a href="https://api.tiles.mapbox.com/mapbox-gl-js/v0.44.1/mapbox-gl.js">mapbox-gl.js</a> 
+      library it depends on. Reducing the size of the 
+      generated JavaScript would not have much impact on download time.<p>
+
+      You can reduce the amount of generated JavaScript by using the
+      default optimizations. However, this can have unintended consequences.
+      For example, with BoxCast P2J, pas2js strips out methods that <i>it</i>
+      thinks are unused, but are called by the Mapbox library. As a result, 
+      optimizations have to be disabled with the -O- switch for this example.<p>
+
+  <li>A downside of JavaScript is that your JavaScript is visible in the
+      user's browser. You can mitigate this to some extent by "obfuscating" the
+      generated JavaScript, which also has the benefit of reducing its size. 
+      You can use Google's
+      <a href="https://developers.google.com/closure/compiler/docs/api-tutorial2">Closure compiler</a> 
+      service to do this, as follows:<p>
+
+      <ul>
+        <li>Make a copy of your generated .js file with a different name.
+            Think of this file as your "source" file, where the readable code
+            is. For example, with BoxCast P2J, we might generate
+            a file named boxcast_p2j.debug.js.
+        <li>Upload this file to somewhere on the Web that Closure can access
+            (normally your own server, not a public one).
+        <li>Create a Python script that looks like this:<p>
+            <pre><code class="python">import httplib, urllib, sys
+
+params = urllib.urlencode([
+    ('code_url', sys.argv[1]),
+    ('compilation_level', 'SIMPLE_OPTIMIZATIONS'),
+    ('output_format', 'text'),
+    ('output_info', 'compiled_code'),
+  ])
+
+headers = { "Content-type": "application/x-www-form-urlencoded" }
+conn = httplib.HTTPSConnection('closure-compiler.appspot.com')
+conn.request('POST', '/compile', params, headers)
+response = conn.getresponse()
+data = response.read()
+print data
+conn.close()
+</code></pre><p>
+        <li>Run the Python script like this, redirecting its output:<p>
+<pre><code class="bash">python obfuscate.py https://www.mydomain.com/boxcast_p2j.debug.js &gt;boxcast_p2j.js</code></pre><p>
+            The resulting smaller boxcast_p2j.js file is what you would deploy
+            instead of the original boxcast_p2j.debug.js.
+      </ul>
+
+  <li>If you look at the Pascal source for the NDFD library that the getforecast
+      CGI app calls, you'll see that all it does is make an HTTP GET request to a 
+      PHP script at https://graphical.weather.gov. Why not eliminate 
+      getforecast and the NDFD library entirely and just call this service
+      directly from boxcast_p2j.pas? After all, you can call just about
+      anything on the Web with the corslite function.<p>
+
+      Here's what BoxCast P2J does now, where fcstUrl is the CGI URL from
+      boxcast_config.pas:<p>
+
+      <pre><code class="delphi"> {Make AJAX call to server, passing coordinates of clicked point.
+   corslite will call the callback function with server response.}
+corslite(appSettings.fcstUrl + '?lat1=' + string(JSValue(e.lngLat.lat)) + 
+          '&amp;lon1=' + string(JSValue(e.lngLat.lng)) + '&amp;geojson=true',
+         @CorsCallback, True);
+</code></pre><p>
+
+      Just change it to something like this:<p>
+
+      <pre><code class="delphi">corslite('https://graphical.weather.gov/xml/sample_products/browser_interface/ndfdBrowserClientByDay.php?' +
+          'lat=' + string(JSValue(e.lngLat.lat)) + 
+          '&amp;lon=' + string(JSValue(e.lngLat.lng)) + '&amp;format=24+hourly',
+         @CorsCallback, True);
+</code></pre><p>
+
+      Now all you would need to do is change CorsCallback
+      to parse the returned XML data and convert it to the GeoJSON data that
+      BoxCast expects.<p>
+
+      The problem is that the weather server does not support 
+      <a href="https://enable-cors.org/">CORS</a> and so most browsers
+      block this kind of cross-domain request. By making the call from a
+      CGI app, the browser is not involved and thus can't block the
+      request. (Note that the server where you deploy the CGI app will still
+      need to support CORS.)<p>
+</ol>
+<hr>
+
+
+Copyright 2018 by Phil Hess.<p>
+macpgmr (at) icloud (dot) com<p>
+First posted March 16, 2018.<p>
+
+</body>
+
+</html>
