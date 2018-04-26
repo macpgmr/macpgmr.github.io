@@ -97,7 +97,7 @@ To test this code, do the following:<p>
 </ol>
 
 Here's the Pascal equivalent of the JavaScript code. (File <b>simple-map.pas</b>
-is included in the <b>simple-map</b> subdirectory of the PnJ download.)<p>
+is included in the <b>examples/mapbox/simple-map</b> subdirectory of the PnJ download.)<p>
 
 <pre><code class="delphi">program SimpleMap;
 
@@ -116,7 +116,7 @@ begin
 end.
 </code></pre><p>
 
-See the <b>mapboxgl.pas</b> interface unit in the <b>package</b> subdirectory
+See the <b>mapboxgl.pas</b> interface unit in the <b>packages/mapbox</b> subdirectory
 of the PnJ download for how <b>accessToken</b> and <b>TMap</b> are declared
 <b>external</b>. The JavaScript implementations are actually in file 
 <b>mapbox-gl.js</b> that you reference in your app's HTML file.<p>
@@ -131,7 +131,7 @@ To test this code, do the following:<p>
   <li>Substitute your own access token.
   <li>From the simple-map subdirectory, convert the Pascal to JavaScript with the 
       transpiler like this (substitute the path to where you unzipped Pas2JS):<p>
-      <pre><code class="bash">yourpath/bin/pas2js -Jirtl.js -Jc -Fu../package simple-map.pas</code></pre><p>
+      <pre><code class="bash">yourpath/bin/pas2js -Jirtl.js -Jc ../../../packages/mapbox simple-map.pas</code></pre><p>
   <li>Double-click the <b>index.html</b> file in the simple-map subdirectory
       to open it in your browser.
 </ol>
@@ -178,7 +178,7 @@ If you want to run Boxcast P2J yourself, here are the steps:<p>
       for more.)<p>
   <li>From the boxcast subdirectory, convert Pascal to JavaScript with the 
       transpiler like this (substitute the path to where you unzipped Pas2JS):<p>
-      <pre><code class="bash">yourpath/bin/pas2js -Jirtl.js -Jc -O- -Fu../package boxcast_p2j.pas</code></pre><p>
+      <pre><code class="bash">yourpath/bin/pas2js -Jirtl.js -Jc -O- -Fu../../../packages/mapbox boxcast_p2j.pas</code></pre><p>
   <li>Double-click the <b>index.html</b> file in the boxcast subdirectory
       to open it in your browser.
 </ol>
@@ -281,7 +281,7 @@ corslite(appSettings.fcstUrl + '?lat1=' + string(JSValue(e.lngLat.lat)) +
 
 Copyright 2018 by Phil Hess.<p>
 macpgmr (at) icloud (dot) com<p>
-First posted March 16, 2018.<p>
+First posted March 16, 2018; last edited April 26, 2018.<p>
 
 </body>
 

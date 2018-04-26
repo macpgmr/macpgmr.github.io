@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<!--Copyright 2018 Phil Hess-->
+<html>
+
+<head>
+
+<title>Web App Development Overview, Part 4</title>
+<style type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</style>
+
+<meta name="AUTHOR" content="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</head>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<body>
+
+<center>
+<h1>Web App Development Overview</h1>
+<h2>Part 4: Writing a Mobile Web App with Pascal</h2>
+</center>
+<hr>
+
+
+<h2>Contents</h2>
+<a href="#Introduction">Introduction</a><br>
+<a href="#SettingUp">Setting up</a><br>
+<a href="#SimpleApp">A simple app</a><br>
+<a href="#FishFacts">The Fish Facts app</a><br>
+<a href="#Future">Future developments</a><br>
+<a href="#MiscNotes">Misc. notes</a><p>
+<hr>
+
+
+<a name="Introduction"></a><h2>Introduction</h2>
+
+<a href="WebAppOverview.html">Part 1</a> discusses creating a Web app that uses 
+the qooxdoo JavaScript framework for the app's user interface. These notes 
+discuss writing a qooxdoo app in Pascal, using the Free Pascal "transpiler" to
+convert the Pascal to JavaScript instead of writing the JavaScript directly.<p>
+
+The rest of the qooxdoo development process remains the same, with the only
+difference being how the required JavaScript is created.<p>
+<hr>
+
+
+<a name="SettingUp"></a><h2>Setting up</h2>
+
+<ol>
+  <li>Download the <a href="https://www.qooxdoo.org">qooxdoo SDK</a>.
+      If you prefer to use the development version of qooxdoo, you can download
+      a .zip from the <a href="https://github.com/qooxdoo/qooxdoo">qooxdoo GitHub</a>
+      repository.<p>
+
+      Unzip this file anywhere you want; no installation is needed.<p>
+
+  <li>On Windows, make sure you have <a href="https://www.python.org">Python</a> 2.7 installed. 
+      Mac and Linux systems will already have Python installed.<p>
+
+  <li>Sass is used by qooxdoo to create CSS files. You may already have Ruby Sass
+      installed; if not, get it from <a href="https://sass-lang.com/ruby-sass">here</a>.<p>
+
+      On Windows you may need to first install Ruby. The small Ruby installer
+      without Devkit from <a href="https://rubyinstaller.org/downloads/">here</a>
+      is sufficient.<p>
+      On Linux, you can install Sass directly with this: sudo apt-get install ruby-sass<p>
+
+  <li>Download the <a href="http://wiki.freepascal.org/pas2js">Pas2JS</a>
+      compiler (transpiler) and RTL from
+      <a href="ftp://ftpmaster.freepascal.org/fpc/contrib/pas2js">here</a>.<p>
+
+      Unzip this file anywhere you like; no installation is needed.<p>
+
+  <li>Download the PnJ .zip from
+      <a href="https://macpgmr.github.io/MacXPlatform/pnj.zip">here</a>.
+      This includes Pascal interface units for the qooxdoo classes.<p>
+
+      Unzip this file anywhere you like; no installation is needed.
+</ol>
+<hr>
+
+
+<a name="SimpleApp"></a><h2>A simple app</h2>
+
+Here are the steps for manually creating a simple mobile app that has a single
+page:<p>
+
+<ol>
+  <li>Use the qooxdoo script to create the app directory and structure.
+      In a terminal, change to where you want to create the directory and
+      enter something like this (substitute the path to your qooxdoo directory):<p>
+
+      <pre><code class="bash">python ~/Tools/qooxdoo-5.0.2-sdk/tool/bin/create-application.py --name=simple --type=mobile</code></pre><p>
+
+      This will create a qooxdoo mobile app and directory named <b>simple</b>.
+      (The source for this app is also included in the PnJ .zip.)<p>
+
+      If you have the <a href="https://sourceforge.net/projects/qxotica">qxotica</a>
+      package installed in Lazarus, you can also use File | New to create the
+      qooxdoo app.<p>
+
+  <li>Delete the generated JavaScript files. Since you'll be generating
+      JavaScript from Pascal, you don't need these files that qooxdoo
+      created. In the app's source/class/simple directory, delete everything
+      that's there. (If you created the app with Lazarus, you can retain
+      the Lazarus project file simple.lpi.)<p>
+
+      If you have npm installed, the current version of qooxdoo (5.0.2) will
+      also create Gruntfile.js, package.json, package-lock.json, and 
+      node_modules in the top level of the app's directory. You can delete these
+      as well. If you're using the trunk version of qooxdoo, these files won't 
+      be created.<p>
+
+  <li>Create <b>Application.pas</b> in source/class/simple with any text
+      editor. Copy and paste this code:<p>
+      <pre><code class="delphi">program Application;
+
+uses
+  JS,
+  qx.ui.mobile,
+  MainPage;
+
+var
+  manager   : TPage_Manager;
+  aMainPage : TMainPage;
+begin
+  manager := TPage_Manager.New(False);
+
+  aMainPage := TMainPage.New;
+
+  manager.addDetail(aMainPage);
+
+  aMainPage.show(nil);
+end.
+</code></pre><p>
+
+      This code is pretty simple: create a page manager and the main page,
+      add the page to the manager, show the page.<p>
+
+  <li>Create <b>MainPage.pas</b> in source/class/simple. Copy and paste
+      this code:<p>
+      <pre><code class="delphi">unit MainPage;
+
+interface
+
+{$modeswitch externalclass}
+
+uses
+  JS,
+  qx,
+  qx.ui.mobile;
+
+type
+  TMainPage = class external name 'simple.MainPage' (TPage_NavigationPage)
+  end;
+
+
+implementation
+
+procedure Construct;
+begin
+  TMainPage(JSThis).base(JSArguments, nil);  //call ancestor's constructor
+  TMainPage(JSThis).setTitle('Simple App');
+end;
+
+
+procedure Initialize;
+begin
+  TMainPage(JSThis).base(JSArguments, nil);  //call ancestor's method
+end;
+
+
+procedure Destruct;
+begin
+end;
+
+
+initialization
+
+  TQx_Class.define('simple.MainPage',
+    new(['extend', TPage_NavigationPage,
+
+         'construct', @Construct,
+
+         'events',
+           new([]),
+
+         'properties',
+           new([]),
+
+         'members',
+           new(['_initialize', @Initialize]),  //override
+
+         'destruct', @Destruct]));
+
+end.
+</code></pre><p>
+
+      Because JavaScript is not an OOP language, qooxdoo introduces its own
+      system for adding OOP to JavaScript, using a "closed form" of
+      class declaration. You can read more about that 
+      <a href="https://www.qooxdoo.org/current/pages/core/oo_introduction.html">here</a>
+      if you're interested. Instead of declaring the class's structure,
+      the class is defined completely by calling
+      <a href="http://www.qooxdoo.org/current/api/#qx.Class">define</a>.
+      In the example code, this is done in the unit's initialization section
+      to ensure that the class is defined before it's used.<p>
+
+      Note how the class is also declared as an external class at the top of
+      the unit. Since everything has to be declared in Pascal, this is needed 
+      so the class's inherited methods can be referenced in Application.pas.<p>
+
+      The define call illustrates two language features that are used routinely
+      in JavaScript and qooxdoo. The first is the JavaScript
+      <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">object</a>
+      (or "map" in qooxdoo terminology). Anytime you need to pass a group of 
+      key-value pairs in JavaScript, you use an object ( {} ). You can create
+      a JavaScript object in Pascal with the
+      <a href="http://wiki.freepascal.org/pas2js#Create_simple_JS_objects_with_the_new_function">new</a>
+      function. In this example, a map of six keys is passed to define.<p>
+
+      The other recurring JavaScript language feature is 
+      <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions">anonymous functions</a>,
+      useful for on-the-fly function declarations. With qooxdoo, this allows 
+      the function's code to appear immediately after the key it's associated with. 
+      Since Pas2JS does not support anonymous functions, the example code uses 
+      named functions Construct, Initialize and Destruct.<p>
+
+      The Construct and Initialize procedures show how to work with another
+      important JavaScript language feature: the
+      <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this">this</a>
+      keyword that's part of all functions and which qooxdoo uses to implement
+      <a href="https://www.qooxdoo.org/current/pages/core/classes.html#inheritance">polymorphism</a>.
+      JSThis is the Pas2JS equivalent, which is typecast to the type 
+      (TMainPage) of the object passed to the function so the object's methods 
+      can be called.<p>
+
+  <li>Copy <b>RunMobileApp.js</b> from PnJ's packages/qooxdoo directory to
+      the app's source/class/simple directory. Edit this file and change
+      <b>myapp</b> to <b>simple</b> in two places. You can then forget about this
+      little file. It's only needed to work around a chicken-and-egg problem
+      when using the Pas2JS runtime with qooxdoo. See the comments in the
+      file for more information.<p>
+
+  <li>Compile the Pascal to generate Application.js. Create a script or batch 
+      file, then copy and paste and edit this as needed:<p>
+      <pre><code class="bash">#!/bin/sh
+set -e
+
+pas2jsdir=~/Tools/pas2js/bin
+qxunitsdir=~/Tools/pnj/packages/qooxdoo
+
+$pas2jsdir/pas2js -Jirtl.js -JiRunMobileApp.js -Jc -JoUseStrict- -Tbrowser -Fu$qxunitsdir Application.pas
+</code></pre><p>
+
+  <li>Generate the qooxdoo app. From the top level of the app directory, run
+      the generate.py script:<p>
+      <pre><code class="bash">python generate.py source</code></pre><p>
+
+      The first time you run generate.py, it creates a cache; this may take a
+      couple minutes, but subsequent runs will only take seconds. When complete,
+      load index.html (in the app's source directory) into your browser to run 
+      the app.<p>
+
+      Note that if you created the app in Lazarus with qxotica, you can
+      also run generate.py by opening simple.lpi in Lazarus and choosing 
+      Run | Compile.<p>
+
+      To generate a final deployment version:<p>
+      <pre><code class="bash">python generate.py build</code></pre><p>
+
+      This minimizes and obfuscates the app's JavaScript code and includes only
+      the qooxdoo classes that the app uses. You can copy the contents of the 
+      app's build directory to your Web server. No other files are needed 
+      to deploy the app.<p>
+
+      To generate the app from the example files supplied with PnJ, edit
+      the simple app's config.json file and change QOOXDOO_PATH so it
+      points to where you unzipped the qooxdoo SDK.<p>
+</ol>
+<hr>
+
+
+<a name="FishFacts"></a><h2>The Fish Facts app</h2>
+
+<a href="WebAppOverview.html#qooxdoo">Part 1</a>
+gives the JavaScript code for a qooxdoo version of the venerable Delphi
+Fish Facts app. Here's the equivalent Pascal code. See the comments in the
+JavaScript code given in Part 1 for more information about what the code is doing.
+
+<h3>Application.pas:</h3>
+<embed src="WebAppOverview_FFAppCode_Pascal.html" type="text/html" width=800 height=300>
+
+<h3>MainPage.pas:</h3>
+<embed src="WebAppOverview_FFMainCode_Pascal.html" type="text/html" width=800 height=300>
+
+<h3>DetailPage.pas:</h3>
+<embed src="WebAppOverview_FFDetailCode_Pascal.html" type="text/html" width=800 height=300><p>
+<hr>
+
+
+<a name="Future"></a><h2>Future developments</h2>
+
+The previous notes describe what you can do today with Pas2JS and qooxdoo.
+Here are some thoughts on where development might become more automatic and
+streamlined in the future.<p>
+
+<ol>
+  <li>Lazarus trunk (1.9) has 
+      <a href="http://wiki.freepascal.org/lazarus_pas2js_integration">some support</a>
+      for Pas2JS integration that you can play around with if you've built the
+      IDE yourself from trunk. The qooxdoo Pascal interface units include a 
+      Lazarus package.<p>
+
+  <li>Support for anonymous functions is a 
+      <a href="http://wiki.freepascal.org/pas2js#Planned_language_features">planned language feature</a>
+      for Pas2JS. Look at the number of places just in DetailPage.pas above 
+      where this would be useful.<p>
+
+  <li>The next major version of qooxdoo (6.0) should include a
+      <a href="https://github.com/qooxdoo/qooxdoo-compiler">command line compiler</a>
+      that will replace much of the current Python toolchain (generate.py, etc.).
+      It includes its own copy of Sass too.<p>
+
+  <li>The Pascal interface units for qooxdoo do not yet include all of the 
+      qooxdoo classes. For example, qooxdoo also has a complete set of
+      user interface controls for developing desktop Web apps. The mobile
+      UI controls generally work fine in desktop browsers, but they are
+      designed for smaller, mobile browsers. If your mobile 
+      Web app doesn't look right in a desktop browser, try embedding it
+      in an HTML embed tag, similar to what 
+      <a href="WebAppOverview.html">Part 1</a> 
+      does with the Fish Facts app (see the page's source).<p>
+</ol>
+<hr>
+
+
+<a name="MiscNotes"></a><h2>Misc. notes</h2>
+<ol>
+  <li>A qooxdoo app that was generated by the "source" job includes
+      a debugging console built-in, meaning you don't have to open the
+      browser's console to see messages that you've output with
+      console.log. Click and hold briefly on the app's title bar to
+      open the debugging console.<p>
+
+  <li>Note the naming of qooxdoo classes in the Pascal interface units.
+      The Pascal convention of prefixing class names with "T" has been
+      followed and the class names have been abbreviated from the actual qooxdoo 
+      class names to make them less verbose. So qx.core.Object becomes
+      TCore_Object, qx.ui.mobile.basic.Label becomes TBasic_Label,
+      and so on. With a small number of classes this results in a somewhat
+      vague class name. For example, qx.event.type.Event becomes
+      TType_Event. Note that you can also include the class's unit name
+      when specifying the type, for example, qx.event.TType_Event.<p>
+      See the qooxdoo 
+      <a href="http://www.qooxdoo.org/current/api/#qx">API viewer</a> 
+      for documentation on all classes.<p>
+</ol>
+<hr>
+
+
+Copyright 2018 by Phil Hess.<p>
+macpgmr (at) icloud (dot) com<p>
+First posted April 26, 2018.<p>
+Code syntax highlighting done with <a href="https://highlightjs.org">highlight.js</a>.<p>
+
+</body>
+</html>
