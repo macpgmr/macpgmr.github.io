@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<!--Copyright 2018 Phil Hess-->
+<html>
+
+<head>
+
+<title>Pascal for TensorFlow, Part 1</title>
+<style type="text/css">
+  BODY { font: 13px/18px "Lucida Grande", Arial, sans-serif; background-color: #fff; color: #333; }
+</style>
+
+<meta name="AUTHOR" content="Phil Hess">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.6">
+</head>
+
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<body>
+
+<center>
+<h1>Pascal for TensorFlow</h1>
+<h2>Part 1: Getting Started</h2>
+</center>
+<hr>
+
+
+<h2>Contents</h2>
+<a href="#Introduction">Introduction</a><br>
+<a href="#Goals">Goals</a><br>
+<a href="#SettingUp">Setting Up</a><br>
+<a href="#Examples">Example Programs</a><br>
+<a href="#Discussion">Discussion</a><p>
+<hr>
+
+
+<a name="Introduction"></a><h2>Introduction</h2>
+
+<a href="https://github.com/tensorflow/tensorflow">TensorFlow</a> is Google's 
+"open source software library for numerical computation."
+TensorFlow is typically used in machine learning applications, but is general
+enough to be used for any computational task, particularly those that involve
+very large datasets. TensorFlow includes support for nearly 900 operations for 
+matrix arithmetic and linear algebra. TensorFlow can be used on low-end hardware, 
+but will automatically utilize more memory and processor cores on higher-end
+hardware and can also use GPUs and external <a href="https://cloud.google.com/tpu">TPUs</a>
+in the cloud.<p>
+
+In March 2018 the Google Brain team announced that they had branched Apple's
+Swift compiler for use with TensorFlow. A lengthy article discussing that
+decision is <a href="https://github.com/tensorflow/swift/blob/master/docs/WhySwiftForTensorFlow.md">here</a>.
+Previously most programming against TensorFlow had been done in Python,
+so this effort represents a significant step both for TensorFlow and for Swift.<p>
+
+Swift for TensorFlow includes Swift wrapper classes for working with the
+library, as well as enhancements to the Swift compiler and language. The project's
+main goal is to provide improved usability for machine learning developers working 
+with TensorFlow.<p>
+
+These notes describe introductory steps for doing something similar for 
+Pascal, although stopping short of modifying the Free Pascal compiler
+and language.<P>
+<hr>
+
+
+<a name="Goals"></a><h2>Goals</h2>
+
+<ol>
+  <li>Create Pascal wrapper classes for TensorFlow that allow developers to work 
+      with TensorFlow in a natural, Pascal-like way, using common Pascal types
+      and conventions, including operator overloading.<p>
+  <li>Reduce the "ceremony" of Pascal programming. Python and Swift are
+      "low-ceremony" languages, whereas Pascal can involve a great deal
+      of prep and housekeeping work declaring variables, managing memory,
+      and other unproductive activities.<p>
+  <li>Look to the brand-new <a href="https://github.com/apple/swift/tree/tensorflow/stdlib/public/TensorFlow">Swift interface</a>
+      for ideas rather than to the traditional 
+      <a href="https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python">Python libraries</a>
+      for TensorFlow.<p>
+</ol>
+<hr>
+
+
+<a name="SettingUp"></a><h2>Setting Up</h2>
+
+<ol>
+  <li>Unzip the Pascal for TensorFlow source code and examples anywhere
+      you want.<p>
+      <a href="https://macpgmr.github.io/MacXPlatform/Pascal4Tensorflow.zip">Pascal4Tensorflow.zip</a><p>
+  <li>Install the TensorFlow libraries (binaries).<p>
+      The TensorFlow dynamic libraries are easy to extract anywhere on your system, 
+      including the default /usr/local/lib location. See the <b>readme.txt</b> file 
+      included in the previous step for links to download the library binaries.<p>
+</ol>
+<hr>
+
+
+<a name="Examples"></a><h2>Example Programs</h2>
+
+Several example Pascal programs that test the TensorFlow library are included.
+Among these are:<p>
+
+<ol>
+  <li><b>inference.pas</b><p>
+      This is the Pascal version of the inference.swift program given in
+      the "Interpreter" section <a href="https://github.com/tensorflow/swift/blob/master/Usage.md">here</a>.
+      It demonstrates how to do a simple classification with TensorFlow. It
+      also shows how verbose Pascal is relative to Swift, although this
+      difference may not be as noticeable in a non-trivial program.<p>
+
+  <li><b>MNIST.pas</b><p>
+      This is the Pascal version of the MNIST.swift program given 
+      <a href="https://github.com/tensorflow/swift-models/tree/master/MNIST">here</a>.
+      This program uses the classic MNIST dataset of 60,000 images of
+      handwritten numeric digits (0-9) collected from census workers and
+      high school students. It uses the dataset to train a neural network to
+      predict a scanned image's digit.<p>
+
+      A useful, detailed discussion of the Swift code is given in part 5
+      <a href="https://towardsdatascience.com/machine-learning-with-swift-for-tensorflow-9167df128912">here</a>.<p>
+</ol>
+<hr>
+
+
+<a name="Discussion"></a><h2>Discussion</h2>
+
+<ol>
+<li><h3>TTensor wrapper class</h3><p>
+
+The parsed C headers are included as unit TensorFlow.pas, but this is a 
+clumsy way of working with TensorFlow in Pascal. As a result, unit TF.pas
+is also included, which wraps TensorFlow.pas in class TTensor.<p>
+
+Like Swift's Tensor, TTensor wraps the newer "eager execution" API.<p>
+
+<li><h3>Convenience constructors</h3><p>
+
+Any kind of multi-dimensional tensor can be created, but in practice tensors
+are often scalar (rank 0), vector (rank 1, or 1 dimension), or simple
+matrix (rank 2, or 2 dimensions). Tensors can also have almost any numeric
+data type. But again, in practice, tensors are often created for just a few
+standard numeric types. As a result, the TTensor class provides convenience 
+constructors for easy creation of tensors of rank 0, 1 or 2 from
+arrays of type Single and other common Pascal types.<p>
+
+For example, Swift code like this that creates a tensor of type Float and rank 2 
+from an array of values:<p>
+
+<pre><code class="swift">var w2 = Tensor&lt;Float&gt;(shape: [4, 1], scalars: [0.4, -0.5, -0.5, 0.4])
+</code></pre>
+
+Can be written in Pascal like this:<p>
+
+<pre><code class="delphi">w2 := TTensor.CreateSingle([4, 1], [0.4, -0.5, -0.5, 0.4]);
+</code></pre>
+
+<li><h3>Operations</h3><p>
+
+Swift for TensorFlow includes functions for all supported tensor operations. These
+are generated automatically for each release. Something similar could be done
+for Pascal by parsing the <a href="https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/core/ops/ops.pbtxt">ops.pbtxt</a> 
+file and generating the function code, but that's for a future effort.<p>
+
+In the meantime, the TTensor.ExecOp method can be used to execute many
+of the supported operations. For example, to do matrix multiplication on 
+two tensors in Swift, you can do this:<p>
+
+<pre><code class="swift">matmul(o1, w2)</code></pre>
+
+For now, do it like this in Pascal:<p>
+
+<pre><code class="delphi">o1.ExecOp('MatMul', w2)</code></pre>
+
+<li><h3>Overloaded operators ( + - / * )</h3><p>
+
+These two Pascal tensor expressions are equivalent:<p>
+
+<pre><code class="delphi">t1 + t2
+t1.ExecOp('Add', t2)
+</code></pre>
+
+<li><h3>Managing memory</h3><p>
+
+Take this example line of Swift code:<p>
+
+<pre><code class="swift">let o1 = tanh(matmul(x, w1) + b1)</code></pre>
+
+This code does matrix multiplication of tensors x and w1, then adds tensor b1
+to the result, calculates the hyperbolic tangent of that result, and
+finally assigns the full expression's tensor value to o1.<p>
+
+Note that in Swift, the o1 tensor variable does not need to be declared 
+previously and tensors are freed automatically when they go out of scope.<p>
+
+As a first cut at a Pascal version of this expression, you could write something 
+like this to ensure it doesn't leak memory:<p>
+
+<pre><code class="delphi">try
+  temp1 := x.ExecOp('MatMul', w1);
+  temp2 := temp1 + b1;
+  o1 := temp2.ExecOp('Tanh');
+finally
+  temp1.Free;
+  temp2.Free;
+  o1.Free;
+end;
+</code></pre>
+
+Recognizing that intermediate tensors created by an expression are 
+temporary and that all operations, including overloaded operators,
+go through the ExecOp method, the TTensor class includes a handy Temp function.
+This Temp function sets the TTensor instance's IsTemp flag and returns the 
+instance. ExecOp then knows whether to call Free on a tensor input. 
+This allows the code to be simplified to this:<p>
+
+<pre><code class="delphi">try
+  o1 := (x.ExecOp('MatMul', w1).Temp + b1).Temp.ExecOp('Tanh');
+finally
+  o1.Free;
+end;
+</code></pre>
+
+Note that this also eliminates the need to declare temp1 and temp2 as variables.<p>
+
+Furthermore, if o1 will always be used in subsequent expressions, its last
+occurrence could be referenced as o1.Temp, thus eliminating the o1.Free line. 
+This might also allow for the elimination of the try/finally lines required here 
+for memory cleanup.<p>
+
+</ol>
+<hr>
+
+
+Copyright 2018 by Phil Hess.<p>
+macpgmr (at) icloud (dot) com<p>
+First posted June 22, 2018.<p>
+Code syntax highlighting done with <a href="https://highlightjs.org">highlight.js</a>.<p>
+
+</body>
+</html>
